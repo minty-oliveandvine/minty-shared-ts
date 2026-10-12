@@ -20,10 +20,11 @@ carries the same font stacks in its own `tailwind.config.ts`, so **change the tw
 npm install "git+https://github.com/minty-oliveandvine/minty-shared-ts.git#v0.1"
 ```
 
-**Use that form, not `github:minty-oliveandvine/minty-shared-ts`.** npm rewrites the shorthand to
-`git+ssh://` in `package-lock.json`, and neither GitHub Actions nor Vercel has an SSH key - it
-installs on your machine and fails in CI and in production. Check the lockfile says `git+https://`
-the moment you install.
+npm will normalise that to `github:minty-oliveandvine/minty-shared-ts#v0.1` in `package.json`
+and to a `git+ssh://` URL in `package-lock.json` whatever you type. **That is expected and it
+works**, because this repo is public: npm falls back to HTTPS, so `npm install` and `npm ci` both
+succeed with no SSH key anywhere (verified 2026-10-12 with ssh forced to fail). Making this repo
+private would break every consumer's CI and Vercel build until a deploy key existed.
 
 **Tags are immutable.** A tag is cut from `main` and never moved - unlike the `.github` repo's
 `v1`, which moves by design. npm caches git dependencies, so a moved tag hands two machines
