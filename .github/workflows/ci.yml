@@ -1,0 +1,29 @@
+# Types, lint and the unit tests.
+#
+# NOT a call into minty-oliveandvine/.github, unlike every app repo: `next-web.yml` ends in
+# `next build` and a source-published library has nothing to build, and a reusable workflow with
+# one caller is not shared CI (the same judgement the modernisation plan makes for
+# `py-package.yml`, deferred until minty-db / minty-shared-py exist). The day a second TS package
+# appears, this becomes `ts-package.yml` in that repo. Recorded in Minty/docs/features/ci.md.
+name: ci
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # What next-web.yml defaults to, and what Vercel builds the consumers with: this package
+          # is compiled by the consumer, so it is checked on the consumer's runtime.
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test

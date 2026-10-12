@@ -1,0 +1,57 @@
+{
+  "name": "@minty/shared",
+  "version": "0.1.0",
+  "description": "Minty's shared TypeScript: design tokens, the sidebar, and the modules every Next.js app had a copy of.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minty-oliveandvine/minty-shared-ts.git"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "!src/**/__tests__/**"
+  ],
+  "exports": {
+    "./theme.css": "./src/theme.css",
+    "./host": "./src/host.ts",
+    "./sidebar": "./src/sidebar/index.ts",
+    "./viewer": "./src/lib/viewer.ts",
+    "./safeNext": "./src/lib/safeNext.ts",
+    "./companyRef": "./src/lib/companyRef.ts",
+    "./emailInput": "./src/lib/emailInput.ts",
+    "./leaveGuard": "./src/lib/leaveGuard.ts"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "peerDependencies": {
+    "next": ">=16.3.8 <17",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.8",
+    "jsdom": "^29.1.1",
+    "next": "16.3.8",
+    "prettier": "^3.9.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "typescript": "^5",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.7"
+  }
+}

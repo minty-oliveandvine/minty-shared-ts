@@ -1,0 +1,38 @@
+/**
+ * @minty/shared/theme.css - the type faces, as Tailwind theme tokens.
+ *
+ * THIS IS THE CANONICAL COPY. Until 2026-10-12 this block was written out byte for byte in
+ * minty-web, minty-payment-request-web and minty-onboarding-web; those three now import this
+ * file instead. minty-www carries the same stacks through its Tailwind v3 `tailwind.config.ts`
+ * (v3 has no `@theme`, so it cannot consume this) - change the two together.
+ *
+ * Each app still supplies the faces themselves: `--font-inter` and `--font-jakarta` come from
+ * `next/font` on `<html className>` in that app's `app/layout.tsx`. This file only says which
+ * stack each token is, and each app's own `html`/`body` rule reads `--font-sans` unchanged.
+ *
+ * Reached with a plain `@import`, the way every app already reaches
+ * `material-symbols/outlined.css` inside node_modules. That is CSS, not class scanning: a
+ * packaged COMPONENT's utility classes additionally need an `@source` line, because Tailwind v4
+ * never scans node_modules and drops them silently. See the README.
+ */
+
+@theme {
+  /* These live in @theme and not in :root: --font-* IS Tailwind's theme namespace, so a :root
+     declaration of the same name cannot be referenced from here the way the colours are, and a
+     token declared only in :root generates no utility - font-sans would silently fall back to
+     Tailwind's own stack instead of Inter. @theme still emits them onto :root, so each app's
+     html/body rule reads them unchanged.
+     No --font-mono: nothing uses the mono utility in any of the four apps (2026-10-12), and
+     Tailwind's own default keeps it monospace, so `code, kbd, samp, pre` stay right too -
+     declaring ours as the sans stack would have made the first <pre> anyone adds silently
+     non-monospace. (Write "the mono utility", never the bare class name: Tailwind v4 scans CSS
+     files for class candidates too, so naming it here is enough to generate it.)
+     No emoji tail either: no app has an emoji in its source. Emoji CAN still arrive in user data
+     (entity names, notes, descriptions) and browsers find an emoji font by their own last-resort
+     fallback, so this is safe; `"Apple Color Emoji", "Segoe UI Emoji"` is the line to put back if
+     emoji ever render wrong on some platform. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Plus Jakarta Sans, for the "Minty" name alone - the brand lockup, never body text
+     (the rule, 2026-10-12). minty-web's components/ui/Wordmark.tsx is its only consumer. */
+  --font-brand: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
