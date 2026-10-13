@@ -1,6 +1,6 @@
 {
   "name": "@minty/shared",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Minty's shared TypeScript: design tokens, the sidebar, and the modules every Next.js app had a copy of.",
   "license": "UNLICENSED",
   "type": "module",
