@@ -160,6 +160,9 @@ in a server component, `request.nextUrl.host` in middleware - never a build-time
 the fallback build is a production build that must still stay inside the set. No React or Next
 imports, so it is safe in edge middleware.
 
+`withReturnOrigin(url, origin?)` adds `return_origin` to an address on Minty (Flask), so Flask
+can hand back into the set; every trip an app makes to Flask goes through it.
+
 ## Working on it
 
 ```

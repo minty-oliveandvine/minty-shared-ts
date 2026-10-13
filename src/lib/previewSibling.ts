@@ -40,3 +40,18 @@ export function siblingUrl(
   const bare = url.pathname === "/" && !url.search && !url.hash && !configuredUrl.endsWith("/");
   return bare ? url.origin : url.toString();
 }
+
+/**
+ * `url` - an address on Minty (Flask) - naming the page's origin as `return_origin`, so Flask
+ * can hand back into a preview set (Minty `blueprints/shared/preview_origin.py`). Flask ignores
+ * it unless its `PREVIEW_ORIGIN_REGEX` allows it, and a normal host's origin leaves any set it
+ * remembered. `origin` defaults to `window.location.origin`; pass the request's on the server
+ * (middleware). With neither, `url` comes back unchanged.
+ */
+export function withReturnOrigin(url: string, origin?: string): string {
+  const own = origin ?? (typeof window === "undefined" ? undefined : window.location.origin);
+  if (!own) return url;
+  const target = new URL(url);
+  target.searchParams.set("return_origin", own);
+  return target.toString();
+}

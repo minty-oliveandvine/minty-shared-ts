@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { previewSetSlug, siblingUrl } from "../previewSibling";
+import { previewSetSlug, siblingUrl, withReturnOrigin } from "../previewSibling";
 
 const PRW = "https://payment.dailyminty.com";
 
@@ -65,5 +65,20 @@ describe("previewSetSlug", () => {
 
   it("is null off a preview set", () => {
     expect(previewSetSlug("my.dailyminty.com")).toBeNull();
+  });
+});
+
+describe("withReturnOrigin", () => {
+  it("names the page's own origin, keeping the address's query", () => {
+    const target = new URL(withReturnOrigin("https://minty.test/auth/email/handoff?t=abc"));
+    expect(target.searchParams.get("t")).toBe("abc");
+    expect(target.searchParams.get("return_origin")).toBe(window.location.origin);
+  });
+
+  it("takes the origin it is given - middleware runs on the server", () => {
+    const target = new URL(
+      withReturnOrigin("https://minty.test/entity", "https://pr-a-my.dailyminty.com"),
+    );
+    expect(target.searchParams.get("return_origin")).toBe("https://pr-a-my.dailyminty.com");
   });
 });
