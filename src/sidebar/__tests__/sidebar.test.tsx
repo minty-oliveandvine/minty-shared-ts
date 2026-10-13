@@ -4,7 +4,7 @@
 // minty-payment-request-web's `components/ui/__tests__/Sidebar.test.tsx`, which diverged on
 // purpose).
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -77,12 +77,40 @@ describe("the packaged sidebar", () => {
     expect(item("Settings")).toHaveAttribute("href", "/entity/abcd1234/acme/settings/modules");
   });
 
-  it("marks the page being shown for assistive technology only", async () => {
+  it("marks the page being shown as current (Part 14 Nav item, Active)", async () => {
     host.setCurrent("entities");
     render(app());
     await open();
     expect(item("Select Entity")).toHaveAttribute("aria-current", "page");
     expect(item("Manage subscriptions")).not.toHaveAttribute("aria-current");
+  });
+
+  it("draws no rail unless the app asks for one", () => {
+    render(app());
+    expect(screen.queryByRole("complementary", { name: "Sidebar" })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open navigation menu" }).parentElement,
+    ).not.toHaveClass("xl:hidden");
+  });
+
+  it("with `rail`, keeps the menu on screen from 1280px and hides the ≡ there", async () => {
+    host.setEntity("e1", "Acme");
+    at("/entity/abcd1234/acme/settings/modules");
+    render(
+      <SidebarProvider rail profile={<p>the profile slot</p>}>
+        <NavMenu />
+      </SidebarProvider>,
+    );
+    const rail = await screen.findByRole("complementary", { name: "Sidebar" });
+    expect(rail).toHaveClass("hidden", "xl:block", "w-[280px]");
+    expect(within(rail).getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open navigation menu" }).parentElement).toHaveClass(
+      "xl:hidden",
+    );
+
+    // The rail's person block opens My Profile in the sheet.
+    await userEvent.click(within(rail).getByRole("button", { name: /My Profile/ }));
+    expect(await screen.findByText("the profile slot")).toBeInTheDocument();
   });
 
   it("draws a company's module sections only inside a company, and only the modules it has", async () => {

@@ -63,7 +63,16 @@ export type SidebarControls = {
   setMenuContext: (context: MenuContext) => void;
   /** Whether My Profile opens in here - the shell filled the slot. Else it is the `/profile` page. */
   canOpenProfile: boolean;
+  /** The menu stands as a rail on the right from 1280px (the provider's `rail`); the ≡ hides there. */
+  rail: boolean;
 };
+
+/**
+ * What a page under a railed provider adds to its outer frame, so nothing sits under the
+ * 280px rail from 1280px up. A class string, not a number: it lives in this package's source,
+ * so the consumer's `@source` line makes Tailwind generate it.
+ */
+export const SIDEBAR_RAIL_OFFSET = "xl:pr-[280px]";
 
 const SidebarContext = createContext<SidebarControls | null>(null);
 
@@ -137,18 +146,20 @@ export function SidebarDrawer({
       // closed, nothing in it takes the keyboard's focus either
       inert={!open}
     >
-      {/* Figma "Rectangle 398": the page behind washes out; a click on it closes the sidebar */}
+      {/* Part 13 overlay/scrim (48% Light): the page behind dims; a click on it closes the sidebar */}
       <button
         type="button"
-        className={`absolute inset-0 cursor-pointer bg-[#d9d9d9]/70 transition-opacity duration-300 ease-out ${open ? "opacity-100" : "opacity-0"}`}
+        className={`absolute inset-0 cursor-pointer bg-overlay-scrim transition-opacity duration-300 ease-(--ease-standard) ${open ? "opacity-100" : "opacity-0"}`}
         onClick={onClose}
         tabIndex={open ? 0 : -1}
         aria-label={profile ? "Close My Profile" : "Close menu"}
       />
+      {/* Part 14 Sidebar: a 280px sheet from the right (elevation 2, surface/raised); My Profile
+          keeps its 440px from 640px up and the whole screen on a phone. */}
       <div
         id={panelId}
         ref={panel}
-        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border border-[#ededed] shadow-[-6px_4px_18px_0px_rgba(15,23,42,0.1)] transition-[transform,width] duration-300 ease-out ${profile ? "w-full bg-[#f9fafb] sm:w-[440px]" : "w-[min(100%,353px)] bg-white"} ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border-l border-border-default shadow-modal transition-[transform,width] duration-300 ease-(--ease-standard) ${profile ? "w-full bg-surface-sunk sm:w-[440px]" : "w-[min(100%,280px)] bg-surface-raised"} ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         {children}
       </div>
@@ -175,10 +186,17 @@ const sameContext = (a: MenuContext, b: MenuContext) =>
 
 export function SidebarProvider({
   profile,
+  rail = false,
   children,
 }: {
   /** My Profile's view - the profile feature's panel, composed in by the shell. */
   profile?: ReactNode;
+  /**
+   * Part 14 / 15 "One layout" (D14-15): from 1280px the menu is a fixed 280px rail on the right,
+   * always there; below that it stays the sheet the ≡ opens. Opt-in, so an app adopts it when its
+   * page frame carries `SIDEBAR_RAIL_OFFSET`.
+   */
+  rail?: boolean;
   children: ReactNode;
 }) {
   const host = requireSidebarHost();
@@ -219,8 +237,20 @@ export function SidebarProvider({
       close,
       setMenuContext,
       canOpenProfile,
+      rail,
     }),
-    [open, view, panelId, openMenu, openProfile, showMenu, close, setMenuContext, canOpenProfile],
+    [
+      open,
+      view,
+      panelId,
+      openMenu,
+      openProfile,
+      showMenu,
+      close,
+      setMenuContext,
+      canOpenProfile,
+      rail,
+    ],
   );
 
   // The menu's name: My Profile in place - or, on the profile page itself, just close. An app
@@ -230,9 +260,27 @@ export function SidebarProvider({
     else setState((s) => ({ ...s, view: "profile" }));
   }, [pathname, close, host]);
 
+  // The rail's person block opens My Profile in the sheet (or the page, without a profile slot).
+  const railProfile = useCallback(() => {
+    if (canOpenProfile && host.currentOf(pathname) !== "profile") openAt("profile");
+  }, [canOpenProfile, host, pathname, openAt]);
+
   return (
     <SidebarContext.Provider value={controls}>
       {children}
+      {mounted && rail ? (
+        <aside
+          className="fixed inset-y-0 right-0 z-[100] hidden w-[280px] overflow-y-auto overscroll-contain border-l border-border-subtle bg-surface-card xl:block"
+          aria-label="Sidebar"
+          data-sidebar-rail=""
+        >
+          <SideMenu
+            {...menuContext}
+            onClose={() => {}}
+            onProfile={canOpenProfile ? railProfile : undefined}
+          />
+        </aside>
+      ) : null}
       {mounted
         ? createPortal(
             <SidebarDrawer

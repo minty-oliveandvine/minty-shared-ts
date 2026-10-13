@@ -35,12 +35,13 @@ export function NavMenu({ modules, viewer }: NavMenuProps) {
   const expanded = sidebar ? sidebar.open && sidebar.view === "menu" : localOpen;
 
   return (
-    <div className="flex shrink-0 items-center">
+    // Under a railed provider the menu is always on screen from 1280px, so the ≡ goes there.
+    <div className={`flex shrink-0 items-center ${sidebar?.rail ? "xl:hidden" : ""}`}>
       <button
         ref={trigger}
         type="button"
         onClick={() => (sidebar ? sidebar.openMenu(trigger.current) : setLocalOpen(true))}
-        className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-md transition-colors hover:bg-primary/10"
+        className="inline-flex size-11 cursor-pointer items-center justify-center rounded-lg transition-colors duration-100 hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
         aria-expanded={expanded}
         aria-controls={sidebar ? sidebar.panelId : localPanelId}
         aria-label="Open navigation menu"

@@ -15,6 +15,7 @@
   ],
   "exports": {
     "./theme.css": "./src/theme.css",
+    "./tokens.css": "./src/tokens.css",
     "./host": "./src/host.ts",
     "./sidebar": "./src/sidebar/index.ts",
     "./viewer": "./src/lib/viewer.ts",

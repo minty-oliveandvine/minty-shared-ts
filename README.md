@@ -66,6 +66,29 @@ silently.
 `theme.css` is different: a plain `@import` resolved by the bundler, exactly like
 `material-symbols/outlined.css`. Misspell it and the build fails.
 
+### `tokens.css` - the Part 13 design tokens (the sidebar needs them)
+
+```css
+@import "@minty/shared/theme.css";
+@import "@minty/shared/tokens.css"; /* colour, radius, type, elevation - Part 13 v1.1 */
+```
+
+The Minty v2 tokens from `Minty/docs/design/part-13-visual-design-system.md`: `--minty-*`
+primitives in `:root`, and the semantic roles (`--color-action-primary`, `--color-text-secondary`,
+`--color-status-info-bg` ...), the radius scale (`rounded-lg` = 12px), the type styles
+(`text-body-m`, `text-label` ...) and two shadows in `@theme`, so they generate utilities. Screens
+bind to the semantic roles only, never a hex. **The sidebar's classes use them**, so a consumer
+that renders it must import this file - without it the menu draws in Tailwind's defaults. Dark
+values exist under `:root[data-theme="dark"]` and nothing sets that attribute yet (Light at
+launch, D-24). Note it redefines Tailwind's `--radius-sm/md/lg/xl`: that is the Part 13 scale.
+
+### The sidebar rail (opt-in)
+
+`<SidebarProvider rail>` keeps the menu on screen as a fixed 280px rail on the right from 1280px
+(Part 14 / 15 "One layout", D14-15); below that it stays the sheet the ≡ opens, and the ≡ hides
+where the rail shows. The page's outer frame must carry `SIDEBAR_RAIL_OFFSET` (exported from
+`@minty/shared/sidebar`) so nothing sits under the rail. Without `rail` nothing changes.
+
 Each consumer keeps a test that compiles its real `app/globals.css` through its real
 `@tailwindcss/postcss` and asserts the tokens and the packaged declarations are in the output.
 That test is the only thing standing between a lost line and a broken page.

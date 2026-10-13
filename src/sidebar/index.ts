@@ -9,6 +9,7 @@
 export {
   SidebarProvider,
   SidebarDrawer,
+  SIDEBAR_RAIL_OFFSET,
   useSidebar,
   useMounted,
   type SidebarControls,

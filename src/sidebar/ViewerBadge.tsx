@@ -19,8 +19,11 @@ import { requireSidebarHost, type Viewer } from "../host";
 import { useViewer } from "../lib/viewer";
 import { useSidebar } from "./Sidebar";
 
+// Part 14 App bar avatar: a 32px circle in the avatar accent, inside a 44px target (Part 13 §13.16).
 const BADGE =
-  "inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-[var(--avatar-bg)] text-[12px] font-semibold text-[var(--avatar-fg)] transition-shadow hover:ring-2 hover:ring-primary/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "group inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
+const CIRCLE =
+  "flex size-8 items-center justify-center rounded-full bg-accent-avatar-bg text-label text-accent-avatar-ink transition-shadow duration-100 group-hover:ring-2 group-hover:ring-border-selected/40";
 
 export function ViewerBadge({ viewer }: { viewer?: Viewer | null }) {
   const host = requireSidebarHost();
@@ -42,13 +45,17 @@ export function ViewerBadge({ viewer }: { viewer?: Viewer | null }) {
         aria-controls={sidebar.panelId}
         title={person.name}
       >
-        <span aria-hidden>{person.initials}</span>
+        <span className={CIRCLE} aria-hidden>
+          {person.initials}
+        </span>
       </button>
     );
   }
   return (
     <a href={host.links.profile()} className={BADGE} aria-label={label} title={person.name}>
-      <span aria-hidden>{person.initials}</span>
+      <span className={CIRCLE} aria-hidden>
+        {person.initials}
+      </span>
     </a>
   );
 }
