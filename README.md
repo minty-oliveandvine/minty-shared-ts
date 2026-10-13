@@ -149,6 +149,17 @@ the file pulls the host, and with it `next/navigation`, into memory before any t
 `vi.mock` is registered - binding the real modules for good. Import it inside the hook instead.
 Both consumers do.
 
+## Preview sets (`@minty/shared/previewSibling`)
+
+A branch's previews are one set of hosts, `pr-<slug>-<app>.dailyminty.com`, which the `.github`
+repo's `vercel-preview-set.yml` keeps complete (the branch's build where a repo has the branch,
+the fallback build where it does not). `siblingUrl(configuredUrl, app, currentHost)` moves a
+sibling app's URL into the set the page is served from, and returns it untouched on every other
+host. Pass the host the page is actually on - `window.location.host` in the browser, `headers()`
+in a server component, `request.nextUrl.host` in middleware - never a build-time value, because
+the fallback build is a production build that must still stay inside the set. No React or Next
+imports, so it is safe in edge middleware.
+
 ## Working on it
 
 ```

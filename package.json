@@ -22,7 +22,8 @@
     "./safeNext": "./src/lib/safeNext.ts",
     "./companyRef": "./src/lib/companyRef.ts",
     "./emailInput": "./src/lib/emailInput.ts",
-    "./leaveGuard": "./src/lib/leaveGuard.ts"
+    "./leaveGuard": "./src/lib/leaveGuard.ts",
+    "./previewSibling": "./src/lib/previewSibling.ts"
   },
   "scripts": {
     "lint": "eslint",
