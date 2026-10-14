@@ -13,6 +13,8 @@ describe("siblingUrl", () => {
     ["payment-request", "my", "https://pr-feat-x-my.dailyminty.com"],
     ["onboarding", "my", "https://pr-feat-x-my.dailyminty.com"],
     ["www", "onboarding", "https://pr-feat-x-onboarding.dailyminty.com"],
+    ["petty-cash", "my", "https://pr-feat-x-my.dailyminty.com"],
+    ["my", "petty-cash", "https://pr-feat-x-petty-cash.dailyminty.com"],
   ] as const)("maps pr-feat-x-%s to its %s sibling", (own, sub, expected) => {
     expect(siblingUrl(PRW, sub, `pr-feat-x-${own}.dailyminty.com`)).toBe(expected);
   });

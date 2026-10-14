@@ -1,7 +1,7 @@
 # minty-shared-ts (`@minty/shared`)
 
-Minty's shared TypeScript for the **Next.js** apps: the design tokens, the sidebar, and the
-modules every app used to carry a copy of. Part 3 step 4 of
+Minty's shared TypeScript for the **Next.js** apps: the design tokens, the sidebar, the Part 14
+primitives (`@minty/shared/ui`, since v0.3) and the modules every app used to carry a copy of. Part 3 step 4 of
 `Minty/docs/modernisation/modernisation_plan.md`, brought forward on 2026-10-12.
 
 Flask is not a consumer and never will be - its templates keep their own sidebar and CSS, and
@@ -13,6 +13,7 @@ carries the same font stacks in its own `tailwind.config.ts`, so **change the tw
 | `minty-web`                 | yes         | yes                                                          |
 | `minty-payment-request-web` | yes         | yes                                                          |
 | `minty-onboarding-web`      | yes         | not yet (opt-in, after its `{ok,error}` typing pass settles) |
+| `minty-petty-cash-web`      | yes         | yes, and the first consumer of `ui`                          |
 
 ## Installing
 
@@ -99,6 +100,25 @@ The menu renders fifteen files under `/menu/`. Next cannot serve a static file o
 `node_modules`, so **they live in each app's `public/`**. `SIDEBAR_ASSETS` (exported from
 `@minty/shared/sidebar`) is the list; each consumer asserts its `public/` against it, because a
 missing file is a broken image rather than an error.
+
+### The Part 14 primitives (`@minty/shared/ui`)
+
+Button, Field, ErrorSummary, InlineAlert / PageBanner, Modal / Drawer, StatusPill, EmptyState,
+FilterChip, SegmentedControl, PageHeader, Skeleton and Icon - built in minty-payment-request-web's
+Part 13-15 migration (2026-10-13) and lifted here in v0.3. They draw only with the semantic token
+utilities of `tokens.css`, so a consumer needs that sheet and the `@source` line. Two changes
+from the app's copies:
+
+- `StatusPill` takes its `tone` as a prop. Which status is which tone is each app's own map (its
+  `lib/statusTone.ts`); the five tones and their colours (`TONE_CLASS`) are here.
+- `Modal` / `Drawer` hold the page still through `@minty/shared/scrollLock` (reference counted;
+  the element with id `app-scroll-root` when the app has one, else the body). An app's sidebar
+  host can hand the same lock to `lockScroll`, so a drawer over the menu shares one count.
+
+`UI_ASSETS` lists the `public/` files they render (`/cat-hole.png` for the first-use empty state),
+under the same contract as `SIDEBAR_ASSETS`.
+
+minty-payment-request-web still renders its own copies; it moves to these in its own task.
 
 ## The host
 
