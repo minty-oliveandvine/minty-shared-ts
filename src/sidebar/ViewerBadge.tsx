@@ -19,11 +19,12 @@ import { requireSidebarHost, type Viewer } from "../host";
 import { useViewer } from "../lib/viewer";
 import { useSidebar } from "./Sidebar";
 
-// Part 14 App bar avatar: a 32px circle in the avatar accent, inside a 44px target (Part 13 §13.16).
+// Minty v2 (minty-web's look, v0.4): the visible circle is 28px (the inner span); the button around
+// it is a 44px hit area (Part 13 §13.16) that takes no extra room in the header (`-m-2`).
 const BADGE =
-  "group inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
+  "group -m-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-border-focus";
 const CIRCLE =
-  "flex size-8 items-center justify-center rounded-full bg-accent-avatar-bg text-label text-accent-avatar-ink transition-shadow duration-100 group-hover:ring-2 group-hover:ring-border-selected/40";
+  "inline-flex size-7 items-center justify-center rounded-full bg-accent-avatar-bg text-label font-semibold text-accent-avatar-ink transition-shadow duration-100 group-hover:ring-2 group-hover:ring-border-selected/25";
 
 export function ViewerBadge({ viewer }: { viewer?: Viewer | null }) {
   const host = requireSidebarHost();

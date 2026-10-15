@@ -154,12 +154,13 @@ export function SidebarDrawer({
         tabIndex={open ? 0 : -1}
         aria-label={profile ? "Close My Profile" : "Close menu"}
       />
-      {/* Part 14 Sidebar: a 280px sheet from the right (elevation 2, surface/raised); My Profile
-          keeps its 440px from 640px up and the whole screen on a phone. */}
+      {/* Minty v2 (minty-web's look, v0.4): a 353px sheet from the right, rounded on its open
+          edge from 640px (elevation: overlay); My Profile keeps its 440px from 640px up and the
+          whole screen on a phone. */}
       <div
         id={panelId}
         ref={panel}
-        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border-l border-border-default shadow-modal transition-[transform,width] duration-300 ease-(--ease-standard) ${profile ? "w-full bg-surface-sunk sm:w-[440px]" : "w-[min(100%,280px)] bg-surface-raised"} ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border-l border-border-default shadow-overlay sm:rounded-l-xl transition-[transform,width] duration-300 ease-(--ease-standard) ${profile ? "w-full bg-surface-sunk sm:w-[440px]" : "w-[min(100%,353px)] bg-surface-card"} ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         {children}
       </div>

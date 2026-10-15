@@ -90,6 +90,15 @@ launch, D-24). Note it redefines Tailwind's `--radius-sm/md/lg/xl`: that is the 
 where the rail shows. The page's outer frame must carry `SIDEBAR_RAIL_OFFSET` (exported from
 `@minty/shared/sidebar`) so nothing sits under the rail. Without `rail` nothing changes.
 
+### The sidebar's look (v0.4)
+
+From v0.4 the sidebar draws minty-web's Minty v2 look (the owner's choice, 2026-10-15) in place
+of v0.2's compact Part 13 restyle: a 353px sheet, 44px rows in `text-title-l`, the module
+headings with their 76px icons on the right, the 99px logo and a 28px header badge. Only the
+classes changed - the host, the rail, the scroll lock and every behaviour are v0.3's. The rail
+was drawn for the compact look; this geometry has not been checked inside its 280px yet, so
+check it before a consumer turns `rail` on.
+
 Each consumer keeps a test that compiles its real `app/globals.css` through its real
 `@tailwindcss/postcss` and asserts the tokens and the packaged declarations are in the output.
 That test is the only thing standing between a lost line and a broken page.
