@@ -156,11 +156,12 @@ export function SidebarDrawer({
       />
       {/* Minty v2 (minty-web's look, v0.4): a 353px sheet from the right, rounded on its open
           edge from 640px (elevation: overlay); My Profile keeps its 440px from 640px up and the
-          whole screen on a phone. */}
+          whole screen on a phone. The shadow is drawn only while open: closed, the sheet waits
+          just past the right edge and its shadow fell back onto every page as a faint strip. */}
       <div
         id={panelId}
         ref={panel}
-        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border-l border-border-default shadow-overlay sm:rounded-l-xl transition-[transform,width] duration-300 ease-(--ease-standard) ${profile ? "w-full bg-surface-sunk sm:w-[440px]" : "w-[min(100%,353px)] bg-surface-card"} ${open ? "translate-x-0" : "translate-x-full"}`}
+        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border-l border-border-default sm:rounded-l-xl transition-[transform,width] duration-300 ease-(--ease-standard) ${profile ? "w-full bg-surface-sunk sm:w-[440px]" : "w-[min(100%,353px)] bg-surface-card"} ${open ? "translate-x-0 shadow-overlay" : "translate-x-full"}`}
       >
         {children}
       </div>

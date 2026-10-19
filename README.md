@@ -99,6 +99,9 @@ classes changed - the host, the rail, the scroll lock and every behaviour are v0
 was drawn for the compact look; this geometry has not been checked inside its 280px yet, so
 check it before a consumer turns `rail` on.
 
+From v0.5 the sheet casts its `shadow-overlay` only while open. Closed, it waits just past the
+right edge, and in v0.4 its shadow fell back onto every page as a faint strip about 20px wide.
+
 Each consumer keeps a test that compiles its real `app/globals.css` through its real
 `@tailwindcss/postcss` and asserts the tokens and the packaged declarations are in the output.
 That test is the only thing standing between a lost line and a broken page.

@@ -85,6 +85,18 @@ describe("the packaged sidebar", () => {
     expect(item("Manage subscriptions")).not.toHaveAttribute("aria-current");
   });
 
+  it("casts its shadow only while open, so the closed sheet leaves no strip on the page's edge", async () => {
+    render(app());
+    const opener = screen.getByRole("button", { name: "Open navigation menu" });
+    const panel = document.getElementById(opener.getAttribute("aria-controls") ?? "");
+    expect(panel).not.toBeNull();
+    // Closed, the sheet sits just past the right edge; a shadow there bled ~20px back onto
+    // every page.
+    expect(panel).not.toHaveClass("shadow-overlay");
+    await open();
+    expect(panel).toHaveClass("shadow-overlay");
+  });
+
   it("draws no rail unless the app asks for one", () => {
     render(app());
     expect(screen.queryByRole("complementary", { name: "Sidebar" })).not.toBeInTheDocument();
