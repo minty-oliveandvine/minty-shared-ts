@@ -1,0 +1,34 @@
+/**
+ * My Profile per state - Figma 10-A (opened inside a company with Payment Request), 10-B's header
+ * (a SuperMinty company) and the profile opened from the entity list (no company). For tests -
+ * the package's, and any app's (`@minty/shared/profile/fixtures` is not exported; copy the shape).
+ */
+
+import type { Profile } from "./types";
+
+const USER = {
+  id: "u-john",
+  first_name: "John",
+  last_name: "Birmingha",
+  name: "John Birmingha",
+  initials: "JB",
+  email: "john.doe@oliveandvinehk.com",
+};
+
+export const SCOPED: Profile = {
+  user: USER,
+  entity: {
+    id: "e-company-a",
+    name: "Company A Limited",
+    role: "shop_manager",
+    role_label: "Shop Manager",
+    modules: ["PAYMENT_REQUEST"],
+  },
+};
+
+export const SUPERMINTY: Profile = {
+  user: USER,
+  entity: { ...SCOPED.entity!, modules: ["PAYMENT_REQUEST", "PETTY_CASH"] },
+};
+
+export const UNSCOPED: Profile = { user: USER, entity: null };

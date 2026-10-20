@@ -17,19 +17,17 @@ import { useRef } from "react";
 
 import { requireSidebarHost, type Viewer } from "../host";
 import { useViewer } from "../lib/viewer";
-import { useSidebar } from "./Sidebar";
+import { SIDEBAR_LOOK } from "./looks";
+import { useLook, useSidebar } from "./Sidebar";
 
-// Minty v2 (minty-web's look, v0.4): the visible circle is 28px (the inner span); the button around
-// it is a 44px hit area (Part 13 §13.16) that takes no extra room in the header (`-m-2`).
-const BADGE =
-  "group -m-2 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-border-focus";
-const CIRCLE =
-  "inline-flex size-7 items-center justify-center rounded-full bg-accent-avatar-bg text-label font-semibold text-accent-avatar-ink transition-shadow duration-100 group-hover:ring-2 group-hover:ring-border-selected/25";
+// The badge's classes are the look's (`./looks.ts`): v2 draws a 28px circle inside a 44px hit area
+// (Part 13 §13.16, `-m-2` so it takes no extra room); classic is the 28px circle itself.
 
 export function ViewerBadge({ viewer }: { viewer?: Viewer | null }) {
   const host = requireSidebarHost();
   const person = useViewer(viewer);
   const sidebar = useSidebar();
+  const L = SIDEBAR_LOOK[useLook()];
   const badge = useRef<HTMLButtonElement>(null);
   if (!person) return null;
 
@@ -40,21 +38,21 @@ export function ViewerBadge({ viewer }: { viewer?: Viewer | null }) {
         ref={badge}
         type="button"
         onClick={() => sidebar.openProfile(badge.current)}
-        className={BADGE}
+        className={L.badge}
         aria-label={label}
         aria-expanded={sidebar.open && sidebar.view === "profile"}
         aria-controls={sidebar.panelId}
         title={person.name}
       >
-        <span className={CIRCLE} aria-hidden>
+        <span className={L.badgeCircle} aria-hidden>
           {person.initials}
         </span>
       </button>
     );
   }
   return (
-    <a href={host.links.profile()} className={BADGE} aria-label={label} title={person.name}>
-      <span className={CIRCLE} aria-hidden>
+    <a href={host.links.profile()} className={L.badge} aria-label={label} title={person.name}>
+      <span className={L.badgeCircle} aria-hidden>
         {person.initials}
       </span>
     </a>

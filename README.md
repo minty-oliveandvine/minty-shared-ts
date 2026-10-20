@@ -102,6 +102,30 @@ check it before a consumer turns `rail` on.
 From v0.5 the sheet casts its `shadow-overlay` only while open. Closed, it waits just past the
 right edge, and in v0.4 its shadow fell back onto every page as a faint strip about 20px wide.
 
+### Two designs: `look="classic"` and `look="v2"` (v0.6)
+
+The owner (2026-10-20): the sidebars are shared, in two designs - **`classic`**, minty-web
+`main`'s original (v0.1 of this package), on every `main` branch; and **`v2`**, the redesign
+above, on every `development` branch. One implementation - behaviour, host, rail and scroll lock
+are the same - with two sets of classes (`src/sidebar/looks.ts`, `src/profile/looks.ts`):
+
+```tsx
+<SidebarProvider look="classic" profile={…}>   // main branches
+<SidebarProvider profile={…}>                    // development: v2 is the default
+```
+
+My Profile and its Subscriptions Overview follow the provider's look (or take `look` themselves,
+for a page drawn outside a sidebar). `classic` is kept verbatim from the originals with two
+mechanical substitutions, so it needs neither the app's old tokens nor `tokens.css`:
+minty-web main's colour tokens written in as values (`primary` #656565, `accent` #f15a24,
+`teal-strong` #18c4c7, avatar #ffe6b1 / #6b3a12), and Tailwind's radius steps as pixels
+(`tokens.css` redefines `rounded-md/-lg/-xl`). That is the one sanctioned exception to "never a
+hex" - including its Brand #54D3DA button fills - because it is the original preserved, not a new
+screen. Every `classic` class was traced back to its source (86 slots, 2026-10-20); a test keeps
+Part 13 classes and the redefined radius steps out of it. Both looks drop the PASSWORD row, and
+both keep the two fixes made since v0.1: the panel fills the sheet, and the sheet's shadow only
+while open.
+
 Each consumer keeps a test that compiles its real `app/globals.css` through its real
 `@tailwindcss/postcss` and asserts the tokens and the packaged declarations are in the output.
 That test is the only thing standing between a lost line and a broken page.
@@ -131,6 +155,38 @@ from the app's copies:
 under the same contract as `SIDEBAR_ASSETS`.
 
 minty-payment-request-web still renders its own copies; it moves to these in its own task.
+
+### My Profile (`@minty/shared/profile`, v0.6)
+
+The sidebar's second view: My Profile opens over the page, never as a page of its own (the
+owner, 2026-10-20). It was a copy per app (minty-web's `features/profile` the original); since
+v0.6 it is one `ProfilePanel`, drawn in the shared tokens - the same values minty-web's app
+tokens held, so the look did not move. No PASSWORD row: Minty holds no password (the owner,
+2026-10-20).
+
+```tsx
+<SidebarProvider profile={<ProfilePanel api={profileApi} notify={toast} />}>
+```
+
+- `api` - the app's two Flask calls, `load(entityId, signal)` and `save(changes, entityId)` over
+  its own bearer fetch (`GET` / `PATCH /api/me/profile`). A refusal rejects with
+  `{ status, message }` and the message is shown as it stands; a 401 shows nothing (the app is
+  already re-signing in); anything else gets the panel's own words. Keep it module-level: a new
+  object per render reads the profile again.
+- `notify(message, kind)` - the app's toast.
+- `subscriptions` - optional; normally the packaged `SubscriptionsOverviewCard`.
+- From the host it takes `entityId()` (the company named) and `logOut()`.
+
+`SubscriptionsOverviewCard load={…}` is the profile's "Subscriptions Overview" (10-A/10-B):
+"Active subscriptions" and "Trial ending" counted as minty-web's portal counts them
+(`overviewFigures`, its `overview` and `calendarDays` lifted - change them together), and Manage
+Subscription to the host's `links.subscriptions()`. `load(signal)` is the app's read of
+subscription-api's `GET /api/me/subscriptions`, every page, resolving `{ entities }`; same refusal
+rules as `api`.
+
+`PROFILE_ASSETS` lists its five `public/profile/` files, under the same contract as
+`SIDEBAR_ASSETS`. minty-web and minty-payment-request-web still render their own copies (with
+the PASSWORD row) until they bump past v0.5 - a change to the panel touches all of them until then.
 
 ## The host
 

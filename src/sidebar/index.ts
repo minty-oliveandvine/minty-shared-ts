@@ -11,10 +11,12 @@ export {
   SidebarDrawer,
   SIDEBAR_RAIL_OFFSET,
   useSidebar,
+  useLook,
   useMounted,
   type SidebarControls,
   type SidebarView,
 } from "./Sidebar";
+export { SIDEBAR_LOOK, type Look, type SidebarLookClasses } from "./looks";
 export { SideMenu, type MenuContext, type SideMenuProps } from "./SideMenu";
 export { NavMenu, type NavMenuProps } from "./NavMenu";
 export { ViewerBadge } from "./ViewerBadge";

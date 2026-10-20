@@ -15,12 +15,14 @@ import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { SideMenu, type MenuContext } from "./SideMenu";
-import { SidebarDrawer, useMounted, useSidebar } from "./Sidebar";
+import { SIDEBAR_LOOK } from "./looks";
+import { SidebarDrawer, useLook, useMounted, useSidebar } from "./Sidebar";
 
 export type NavMenuProps = MenuContext;
 
 export function NavMenu({ modules, viewer }: NavMenuProps) {
   const sidebar = useSidebar();
+  const L = SIDEBAR_LOOK[useLook()];
   const setMenuContext = sidebar?.setMenuContext;
   const mounted = useMounted();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -41,7 +43,7 @@ export function NavMenu({ modules, viewer }: NavMenuProps) {
         ref={trigger}
         type="button"
         onClick={() => (sidebar ? sidebar.openMenu(trigger.current) : setLocalOpen(true))}
-        className="inline-flex size-11 cursor-pointer items-center justify-center rounded-lg transition-colors duration-100 hover:bg-state-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
+        className={L.menuButton}
         aria-expanded={expanded}
         aria-controls={sidebar ? sidebar.panelId : localPanelId}
         aria-label="Open navigation menu"

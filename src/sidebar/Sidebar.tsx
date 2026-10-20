@@ -43,6 +43,7 @@ import {
 } from "react";
 
 import { requireSidebarHost } from "../host";
+import { SIDEBAR_LOOK, type Look } from "./looks";
 import { SideMenu, type MenuContext } from "./SideMenu";
 
 export type SidebarView = "menu" | "profile";
@@ -65,6 +66,8 @@ export type SidebarControls = {
   canOpenProfile: boolean;
   /** The menu stands as a rail on the right from 1280px (the provider's `rail`); the ≡ hides there. */
   rail: boolean;
+  /** Which of the two designs draws it (`./looks.ts`): the provider's `look`. */
+  look: Look;
 };
 
 /**
@@ -79,6 +82,11 @@ const SidebarContext = createContext<SidebarControls | null>(null);
 /** The sidebar, or null outside a provider (the openers then fall back - see above). */
 export function useSidebar(): SidebarControls | null {
   return useContext(SidebarContext);
+}
+
+/** The design in force: the provider's `look`, or `v2` outside one. */
+export function useLook(): Look {
+  return useContext(SidebarContext)?.look ?? "v2";
 }
 
 // The drawer is a portal, and the cookie and the URL its menu reads exist only in the browser:
@@ -114,6 +122,7 @@ export function SidebarDrawer({
   children: ReactNode;
 }) {
   const host = requireSidebarHost();
+  const L = SIDEBAR_LOOK[useLook()];
   const panel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -146,22 +155,23 @@ export function SidebarDrawer({
       // closed, nothing in it takes the keyboard's focus either
       inert={!open}
     >
-      {/* Part 13 overlay/scrim (48% Light): the page behind dims; a click on it closes the sidebar */}
+      {/* The page behind dims (v2: Part 13 overlay/scrim; classic: Figma "Rectangle 398"'s wash);
+          a click on it closes the sidebar */}
       <button
         type="button"
-        className={`absolute inset-0 cursor-pointer bg-overlay-scrim transition-opacity duration-300 ease-(--ease-standard) ${open ? "opacity-100" : "opacity-0"}`}
+        className={`absolute inset-0 cursor-pointer transition-opacity duration-300 ${L.scrim} ${open ? "opacity-100" : "opacity-0"}`}
         onClick={onClose}
         tabIndex={open ? 0 : -1}
         aria-label={profile ? "Close My Profile" : "Close menu"}
       />
-      {/* Minty v2 (minty-web's look, v0.4): a 353px sheet from the right, rounded on its open
-          edge from 640px (elevation: overlay); My Profile keeps its 440px from 640px up and the
-          whole screen on a phone. The shadow is drawn only while open: closed, the sheet waits
-          just past the right edge and its shadow fell back onto every page as a faint strip. */}
+      {/* A 353px sheet from the right (v2: rounded on its open edge from 640px, elevation:
+          overlay); My Profile keeps its 440px from 640px up and the whole screen on a phone. The
+          shadow is drawn only while open, in both looks: closed, the sheet waits just past the
+          right edge and its shadow fell back onto every page as a faint strip. */}
       <div
         id={panelId}
         ref={panel}
-        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain border-l border-border-default sm:rounded-l-xl transition-[transform,width] duration-300 ease-(--ease-standard) ${profile ? "w-full bg-surface-sunk sm:w-[440px]" : "w-[min(100%,353px)] bg-surface-card"} ${open ? "translate-x-0 shadow-overlay" : "translate-x-full"}`}
+        className={`absolute right-0 top-0 h-full overflow-y-auto overscroll-contain transition-[transform,width] duration-300 ${L.sheet} ${profile ? L.sheetProfile : L.sheetMenu} ${open ? L.sheetOpen : "translate-x-full"}`}
       >
         {children}
       </div>
@@ -189,6 +199,7 @@ const sameContext = (a: MenuContext, b: MenuContext) =>
 export function SidebarProvider({
   profile,
   rail = false,
+  look = "v2",
   children,
 }: {
   /** My Profile's view - the profile feature's panel, composed in by the shell. */
@@ -199,6 +210,11 @@ export function SidebarProvider({
    * page frame carries `SIDEBAR_RAIL_OFFSET`.
    */
   rail?: boolean;
+  /**
+   * Which design (the owner, 2026-10-20; `./looks.ts`): `classic` - minty-web's original, on the
+   * `main` branches - or `v2`, the redesign, on `development`. Default `v2`.
+   */
+  look?: Look;
   children: ReactNode;
 }) {
   const host = requireSidebarHost();
@@ -240,6 +256,7 @@ export function SidebarProvider({
       setMenuContext,
       canOpenProfile,
       rail,
+      look,
     }),
     [
       open,
@@ -252,6 +269,7 @@ export function SidebarProvider({
       setMenuContext,
       canOpenProfile,
       rail,
+      look,
     ],
   );
 

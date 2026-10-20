@@ -24,6 +24,8 @@ import type { ReactNode } from "react";
 
 import { requireSidebarHost, type ModuleAccess, type SideMenuCurrent, type Viewer } from "../host";
 import { useViewer } from "../lib/viewer";
+import { SIDEBAR_LOOK, type SidebarLookClasses } from "./looks";
+import { useLook } from "./Sidebar";
 
 export type MenuContext = {
   /**
@@ -46,23 +48,20 @@ export type SideMenuProps = MenuContext & {
   onProfile?: () => void;
 };
 
-// Minty v2 (minty-web's look, v0.4): rows are 44 high at least, grey until hovered; the page being
-// shown (aria-current) is tinted as the selected row. The one tinted row otherwise is Bills, which
-// the design draws as a button ("Bill Button"). Colours are Part 13 semantic tokens from
-// `@minty/shared/tokens.css`, which every consumer imports.
-const ROW =
-  "flex min-h-11 w-full items-center rounded-md text-title-l font-medium transition-colors duration-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
-const IDLE =
-  "text-text-muted hover:bg-state-hover aria-[current=page]:bg-state-selected aria-[current=page]:text-text-link";
-const BUTTON = "bg-state-selected text-text-link hover:bg-state-hover";
+// The classes are the look's (`./looks.ts`). v2: rows are 44 high at least, grey until hovered,
+// and the page being shown (aria-current) is tinted as the selected row. classic: the original
+// Figma 02 rows (Inter 500 18px #8f8f8f), the page being shown marked for assistive technology
+// only. In both, the one tinted row otherwise is Bills, drawn as a button ("Bill Button").
 
 function MenuLink({
   href,
   current,
   className,
   onNavigate,
+  look: L,
   children,
 }: {
+  look: SidebarLookClasses;
   href: string;
   current: boolean;
   className: string;
@@ -74,15 +73,15 @@ function MenuLink({
       href={href}
       onClick={onNavigate}
       aria-current={current ? "page" : undefined}
-      className={`${ROW} ${IDLE} ${className}`}
+      className={`${L.row} ${L.idle} ${className}`}
     >
       {children}
     </a>
   );
 }
 
-function Separator() {
-  return <div className="h-px w-full shrink-0 bg-border-subtle" role="presentation" />;
+function Separator({ look: L }: { look: SidebarLookClasses }) {
+  return <div className={L.separator} role="presentation" />;
 }
 
 /** Figma "Manage subscriptions": four outlined rings, placed as the design places them. */
@@ -130,15 +129,17 @@ function ModuleHeading({
   tone,
   icon,
   iconBox,
+  look: L,
 }: {
+  look: SidebarLookClasses;
   title: ReactNode;
   tone: string;
   icon: { src: string; width: number; height: number };
   iconBox: string;
 }) {
   return (
-    <div className="flex items-center justify-between pl-5">
-      <p className={`text-title-l font-semibold ${tone}`}>{title}</p>
+    <div className={L.moduleHeading}>
+      <p className={`${L.moduleTitle} ${tone}`}>{title}</p>
       <span
         className={`flex size-[76px] shrink-0 items-center justify-center rounded-full ${iconBox}`}
         aria-hidden
@@ -149,12 +150,10 @@ function ModuleHeading({
   );
 }
 
-const PERSON =
-  "mt-8 flex min-h-11 w-full cursor-pointer items-center gap-10 rounded-md py-1 pl-9 text-left transition-colors duration-100 hover:bg-state-hover aria-[current=page]:bg-state-selected focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
-
 /** Rendered only in the browser (inside the sidebar's portal), so the cookie and the URL exist. */
 export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps) {
   const host = requireSidebarHost();
+  const L = SIDEBAR_LOOK[useLook()];
   const person = useViewer(viewer);
   // Read off the URL, so every page gets it for free - and off `window.location`, not the app's
   // router hook: this is drawn inside the drawer's portal, in the browser only, and is re-rendered
@@ -178,13 +177,10 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
   const logout = () => host.logOut(onClose);
   const who = (
     <>
-      <span
-        className="flex h-[57px] w-[56px] shrink-0 items-center justify-center rounded-full bg-accent-avatar-bg text-display-l font-medium text-accent-avatar-ink"
-        aria-hidden
-      >
+      <span className={L.avatar} aria-hidden>
         {person?.initials ?? ""}
       </span>
-      <span className="max-w-[130px] break-words text-title-l text-text-primary" aria-hidden>
+      <span className={L.name} aria-hidden>
         {person?.name ?? "My Profile"}
       </span>
     </>
@@ -192,12 +188,9 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
   const whoLabel = person ? `${person.name}, My Profile` : "My Profile";
 
   return (
-    <nav
-      className="flex min-h-full flex-col px-12 pt-[max(48px,env(safe-area-inset-top,0px))] pb-[max(40px,env(safe-area-inset-bottom,0px))]"
-      aria-label="Main navigation"
-    >
+    <nav className={L.nav} aria-label="Main navigation">
       <Image
-        className="ml-22 h-auto w-[99px] shrink-0"
+        className={L.logo}
         src="/menu/minty-logo.svg"
         alt="Minty"
         width={99}
@@ -211,7 +204,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
           onClick={onProfile}
           aria-current={current === "profile" ? "page" : undefined}
           aria-label={whoLabel}
-          className={PERSON}
+          className={L.person}
         >
           {who}
         </button>
@@ -221,21 +214,22 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
           onClick={onClose}
           aria-current={current === "profile" ? "page" : undefined}
           aria-label={whoLabel}
-          className={PERSON}
+          className={L.person}
         >
           {who}
         </a>
       )}
 
-      <div className="mt-8">
-        <Separator />
+      <div className={L.firstSeparator}>
+        <Separator look={L} />
       </div>
-      <div className="mt-4 flex flex-col gap-1">
+      <div className={L.topLinks}>
         <MenuLink
+          look={L}
           href={host.links.entities()}
           current={current === "entities"}
           onNavigate={onClose}
-          className="gap-5 pl-8"
+          className={L.selectEntity}
         >
           <span className="flex w-[28px] shrink-0 justify-center" aria-hidden>
             <Image src="/menu/select-entity.svg" alt="" width={22} height={20} unoptimized />
@@ -243,34 +237,37 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
           Select Entity
         </MenuLink>
         <MenuLink
+          look={L}
           href={host.links.subscriptions()}
           current={current === "subscriptions"}
           onNavigate={onClose}
-          className="gap-5 py-2 pl-8"
+          className={L.subscriptions}
         >
           <SubscriptionsIcon />
           <span className="max-w-[130px]">Manage subscriptions</span>
         </MenuLink>
       </div>
-      <div className="mt-4">
-        <Separator />
+      <div className={L.secondSeparator}>
+        <Separator look={L} />
       </div>
 
       {inCompany && (access.pettyCash || access.billing) ? (
         <div className="flex flex-col">
           {access.pettyCash ? (
-            <div className="mt-6 flex flex-col" role="group" aria-label="Petty Cash">
+            <div className={L.pettyGroup} role="group" aria-label="Petty Cash">
               <ModuleHeading
+                look={L}
                 title="Petty Cash"
-                tone="text-text-primary"
+                tone={L.pettyTone}
                 icon={{ src: "/menu/petty-cash.svg", width: 42, height: 45 }}
-                iconBox="bg-module-pettycash-wash"
+                iconBox={L.pettyIconBox}
               />
               <MenuLink
+                look={L}
                 href={host.links.pettyCashDashboard()}
                 current={false}
                 onNavigate={onClose}
-                className="mt-4 gap-6 pl-5"
+                className={L.dashboard}
               >
                 <Image
                   src="/menu/dashboard.svg"
@@ -283,10 +280,11 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
                 Dashboard
               </MenuLink>
               <MenuLink
+                look={L}
                 href={host.links.pettyCashReports(entityId)}
                 current={false}
                 onNavigate={onClose}
-                className="gap-6 pl-5"
+                className={L.reports}
               >
                 <Image
                   src="/menu/reports.svg"
@@ -301,27 +299,28 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
             </div>
           ) : null}
           {access.pettyCash && access.billing ? (
-            <div className="mt-6">
-              <Separator />
+            <div className={L.moduleSeparator}>
+              <Separator look={L} />
             </div>
           ) : null}
           {access.billing ? (
-            <div className="mt-6 flex flex-col" role="group" aria-label="Payment Request">
+            <div className={L.paymentGroup} role="group" aria-label="Payment Request">
               <ModuleHeading
+                look={L}
                 title={
                   <>
                     Payment
                     <br aria-hidden /> Request
                   </>
                 }
-                tone="text-module-payment-ink"
+                tone={L.paymentTone}
                 icon={{ src: "/menu/payment-request.svg", width: 76, height: 76 }}
                 iconBox=""
               />
               <a
                 href={host.links.bills()}
                 onClick={onClose}
-                className={`${ROW} ${BUTTON} mt-7 gap-6 pl-4`}
+                className={`${L.row} ${L.button} ${L.bills}`}
               >
                 <Image
                   src="/menu/bills.svg"
@@ -338,10 +337,10 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
         </div>
       ) : null}
 
-      <div className="min-h-6 flex-1" aria-hidden />
+      <div className={L.spacer} aria-hidden />
       {/* The cat sits above Settings and Logout on every page (the user's rule, 2026-09-29) -
           decoration, not navigation. Flask's own side panel draws the same one. */}
-      <div className="flex shrink-0 justify-center pb-4">
+      <div className={L.cat}>
         <Image
           src="/menu/sidepanel_cat.webp"
           alt=""
@@ -352,14 +351,15 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
           unoptimized
         />
       </div>
-      <Separator />
-      <div className="mt-4 flex flex-col gap-1">
+      <Separator look={L} />
+      <div className={L.bottomLinks}>
         {inCompany ? (
           <MenuLink
+            look={L}
             href={host.links.settings()}
             current={current === "settings"}
             onNavigate={onClose}
-            className="gap-4 pl-4"
+            className={L.settings}
           >
             <span className="flex size-[31px] shrink-0 items-center justify-center" aria-hidden>
               <Image
@@ -374,11 +374,7 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
             Settings
           </MenuLink>
         ) : null}
-        <button
-          type="button"
-          onClick={logout}
-          className={`${ROW} ${IDLE} cursor-pointer gap-4 pl-4 text-left`}
-        >
+        <button type="button" onClick={logout} className={`${L.row} ${L.idle} ${L.logout}`}>
           <span className="flex size-[31px] shrink-0 items-center justify-center" aria-hidden>
             <Image src="/menu/logout.svg" alt="" width={23} height={23} unoptimized />
           </span>
