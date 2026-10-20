@@ -93,6 +93,10 @@ describe("the two looks", () => {
       expect(has(overview, P.manage)).toBe(true);
       expect(has(sheet.getByRole("button", { name: "Log Out" }), P.logOut)).toBe(true);
       expect(sheet.queryByText(/password/i)).toBeNull();
+      // the x: classic needs no icon font (the main branches load different ones); v2 the Rounded set
+      const close = sheet.getByRole("button", { name: "Close My Profile" });
+      if (look === "classic") expect(close.querySelector("svg")).not.toBeNull();
+      else expect(close.querySelector(".material-symbols-rounded")).not.toBeNull();
     },
   );
 

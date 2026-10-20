@@ -16,6 +16,8 @@ import type { Look } from "../sidebar/looks";
 
 export const PROFILE_LOOK = {
   v2: {
+    // the ×: Material Symbols Rounded, which every development branch loads (Part 13 D-20)
+    closeGlyph: "font",
     panel: "flex min-h-full flex-1 flex-col bg-surface-page",
     titlebar:
       "sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between bg-surface-page px-4 py-1.5",
@@ -82,6 +84,9 @@ export const PROFILE_LOOK = {
       "mt-5 flex h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-action-primary px-4 text-body-m font-semibold text-action-on-primary hover:bg-action-primary-hover active:bg-action-primary-pressed",
   },
   classic: {
+    // the ×: an inline SVG of the same glyph - the main branches load different icon fonts
+    // (minty-web and the payments app the Outlined set, Petty Cash the Rounded), so no font
+    closeGlyph: "svg",
     panel: "flex min-h-full flex-1 flex-col bg-[#f9fafb]",
     titlebar:
       "sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between bg-[#f9fafb] px-4 py-1.5",
