@@ -61,6 +61,23 @@ export class ApiError extends Error {
     }
     return this.message;
   }
+
+  /**
+   * The refused inputs, one sentence each, keyed by the field's name as it was sent - the
+   * APIs' envelope `{"error", "fields"}` (minty-shared-py, 2026-10-22), for inline messages.
+   * Empty when the body carries none; a non-string entry is dropped, never shown.
+   */
+  get fields(): Record<string, string> {
+    const body = this.body;
+    if (!body || typeof body !== "object") return {};
+    const raw = (body as Record<string, unknown>).fields;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof value === "string" && value.trim()) out[key] = value;
+    }
+    return out;
+  }
 }
 
 export type QueryValue = string | number | boolean | null | undefined;

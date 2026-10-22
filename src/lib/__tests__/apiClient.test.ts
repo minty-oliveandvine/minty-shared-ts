@@ -80,6 +80,20 @@ describe("ApiError", () => {
     expect(new ApiError(500, "Something went wrong.").detail).toBe("Something went wrong.");
     expect(new ApiError(500, "m", {}).detail).toBe("m");
   });
+
+  it("fields are the envelope's per-input sentences, and nothing when there are none", () => {
+    const body = {
+      error: "I still need amount to continue.",
+      fields: { amount: "The amount is still empty. Add the amount to continue.", bad: 3 },
+    };
+    expect(new ApiError(422, "m", body).fields).toEqual({
+      amount: "The amount is still empty. Add the amount to continue.",
+    });
+    expect(new ApiError(422, "m", { error: "e" }).fields).toEqual({});
+    expect(new ApiError(422, "m", { error: "e", fields: ["amount"] }).fields).toEqual({});
+    expect(new ApiError(500, "m", "text").fields).toEqual({});
+    expect(new ApiError(500, "m").fields).toEqual({});
+  });
 });
 
 describe("the sentences", () => {
