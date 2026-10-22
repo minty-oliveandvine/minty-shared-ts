@@ -32,6 +32,11 @@ export function mintyVitest(configUrl, options = {}) {
       globals: false,
       clearMocks: true,
       restoreMocks: true,
+      // Since Vitest 4, restoreMocks touches only vi.spyOn spies, so a test's unused
+      // mockResolvedValueOnce on a shared vi.fn() leaked into the next test. mockReset empties
+      // that queue and puts every vi.fn(impl) back to its own implementation - Vitest 3's
+      // behaviour, which every suite was written against.
+      mockReset: true,
     },
   });
 }
