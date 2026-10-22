@@ -4,7 +4,7 @@
 
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { installFakeHost } from "../../../test/fakeHost";
 import {
@@ -47,7 +47,8 @@ describe("the overview's figures (minty-web's rule)", () => {
 });
 
 describe("SubscriptionsOverviewCard", () => {
-  let load: ReturnType<typeof vi.fn>;
+  // Typed: Vitest 5's untyped vi.fn() is "any function or class", which the prop does not accept.
+  let load: Mock<(signal: AbortSignal) => Promise<SubscriptionsList>>;
 
   beforeEach(() => {
     installFakeHost({

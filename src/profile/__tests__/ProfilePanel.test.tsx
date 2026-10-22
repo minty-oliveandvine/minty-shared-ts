@@ -4,7 +4,7 @@
 
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
 import { installFakeHost, type FakeHost } from "../../../test/fakeHost";
 import { _setViewerLoaderForTests } from "../../lib/viewer";
@@ -13,10 +13,12 @@ import { SidebarProvider } from "../../sidebar/Sidebar";
 import { ViewerBadge } from "../../sidebar/ViewerBadge";
 import { SCOPED, UNSCOPED } from "../fixtures";
 import { PROFILE_ASSETS, ProfilePanel, type Profile, type ProfileApi } from "../index";
+import type { ProfileNotify } from "../types";
 
 let host: FakeHost;
 let api: { load: ReturnType<typeof vi.fn>; save: ReturnType<typeof vi.fn> };
-let notify: ReturnType<typeof vi.fn>;
+// Typed: Vitest 5's untyped vi.fn() is "any function or class", which no callback prop accepts.
+let notify: Mock<ProfileNotify>;
 let look: Look;
 
 function show(subscriptions?: React.ReactNode) {
