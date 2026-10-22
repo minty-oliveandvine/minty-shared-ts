@@ -8,12 +8,40 @@ Flask is not a consumer and never will be - its templates keep their own sidebar
 retire in Part 3. `minty-www` cannot consume this either (Tailwind v3, React 18, Next 14); it
 carries the same font stacks in its own `tailwind.config.ts`, so **change the two together**.
 
-| Consumer                    | `theme.css` | the modules                                                  |
-| --------------------------- | ----------- | ------------------------------------------------------------ |
-| `minty-web`                 | yes         | yes                                                          |
-| `minty-payment-request-web` | yes         | yes                                                          |
-| `minty-onboarding-web`      | yes         | not yet (opt-in, after its `{ok,error}` typing pass settles) |
-| `minty-petty-cash-web`      | yes         | yes, and the first consumer of `ui`                          |
+| Consumer                    | `theme.css` | the modules                                                 |
+| --------------------------- | ----------- | ----------------------------------------------------------- |
+| `minty-web`                 | yes         | yes                                                         |
+| `minty-payment-request-web` | yes         | yes                                                         |
+| `minty-onboarding-web`      | yes         | yes (money, dates, env, errorCopy, emailInput, clientValue) |
+| `minty-petty-cash-web`      | yes         | yes, and the first consumer of `ui`                         |
+
+## The shared modules and presets (v0.7)
+
+Every app's `development` takes these instead of its own copy (the shared-code refactor, owner
+2026-10-21). Each `main` keeps its own code until `development` is promoted. Behaviour is one rule
+per concern; each module's header comment and tests are the specification.
+
+| Subpath         | What it is                                                                                                                                                                                                                                                              |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `./money`       | `formatMoney` ("HKD 1,234.50" - the code, a non-breaking `CODE_SPACE`, the currency's places), `formatPrice` (prices on the onboarding and subscription screens: a trailing ".00" dropped), `formatAmount`, `parseAmount` (null, never a silent 0), `acceptAmountInput` |
+| `./dates`       | `HK_TIME_ZONE`, `isoDateInTimeZone(tz, d)`, `todayIso`, `daysFromToday`, `MONTHS`, `formatDay` ("05 Sep 2026", "" for a non-date), `formatInstantDay`                                                                                                                   |
+| `./apiClient`   | `ApiError`, `withQuery`, `readBody`, `errorSentence`, `HOUSE_FALLBACK`, `SESSION_ENDED`, `createBearerClient` (each app's 401 rule is its `onUnauthorized` callback)                                                                                                    |
+| `./errorCopy`   | `friendlyError`, `errorCopy`, `readsAsProse`, `resolveApiErrorMessage`, `statusFallback` - machine text never reaches a person                                                                                                                                          |
+| `./auth`        | `createCookieAuth({ prefix, maxAge? })`, `decodeJwtPayload`, `secondsUntilExpiry`, `isTokenExpired`, `isTokenExpiringSoon`, `moduleClaims`                                                                                                                              |
+| `./handoff`     | `createHandoff`, `hubHandoffUrl`, `flaskHandoffUrl`, `mintyEntryUrl`, `logoutUrl` (no React)                                                                                                                                                                            |
+| `./landing`     | `useLandingHandoff`, `readLanding` ("use client" - the `/landing` page)                                                                                                                                                                                                 |
+| `./portal`      | `createProfileApi`, `fetchAllSubscriptions`, `loadViewer`, the Portal types                                                                                                                                                                                             |
+| `./clientValue` | `useClientValue`, `useMounted`                                                                                                                                                                                                                                          |
+| `./env`         | `envUrl(name, raw, devFallback)` - throws in a production build when the variable is unset                                                                                                                                                                              |
+| `./download`    | `saveBlob(blob, filename)`, `saveTextFile`, `filenameFromDisposition`                                                                                                                                                                                                   |
+| `./proxy`       | `toFlask` - the hand-over to Flask, a meta-refresh page on preview-set hosts                                                                                                                                                                                            |
+| `./companyRef`  | also `companyPath`, `companyRefFromPath`, `addressCompanyRef` and the cross-app settings URLs                                                                                                                                                                           |
+
+Config presets (plain `.mjs`/`.json` with `.d.mts` types - Node, Next, Vitest and Playwright will
+not strip types from `.ts` under `node_modules`): `./tsconfig.base.json`, `./prettier`, `./eslint`,
+`./vitest` (`mintyVitest`), `./playwright` (`mintyPlaywright`, `PHONE`), `./next`
+(`withMintyDefaults`, `securityHeaders`), `./e2e` (the hand-off token, credentials, `reachable`,
+`expectNoSideScroll`, and `companyRef` as JS - `config/companyRef.mjs`, tested equal to the `.ts`).
 
 ## Installing
 

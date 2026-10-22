@@ -10,6 +10,7 @@
   },
   "files": [
     "src",
+    "config",
     "README.md",
     "!src/**/__tests__/**"
   ],
@@ -26,7 +27,41 @@
     "./emailInput": "./src/lib/emailInput.ts",
     "./leaveGuard": "./src/lib/leaveGuard.ts",
     "./previewSibling": "./src/lib/previewSibling.ts",
-    "./scrollLock": "./src/lib/scrollLock.ts"
+    "./scrollLock": "./src/lib/scrollLock.ts",
+    "./money": "./src/lib/money.ts",
+    "./dates": "./src/lib/dates.ts",
+    "./download": "./src/lib/download.ts",
+    "./env": "./src/lib/env.ts",
+    "./proxy": "./src/lib/proxy.ts",
+    "./apiClient": "./src/lib/apiClient.ts",
+    "./errorCopy": "./src/lib/errorCopy.ts",
+    "./auth": "./src/lib/auth.ts",
+    "./handoff": "./src/lib/handoff.ts",
+    "./landing": "./src/lib/landing.ts",
+    "./portal": "./src/lib/portal.ts",
+    "./clientValue": "./src/lib/clientValue.ts",
+    "./tsconfig.base.json": "./config/tsconfig.base.json",
+    "./prettier": "./config/prettier.json",
+    "./eslint": {
+      "types": "./config/eslint.d.mts",
+      "default": "./config/eslint.mjs"
+    },
+    "./vitest": {
+      "types": "./config/vitest.d.mts",
+      "default": "./config/vitest.mjs"
+    },
+    "./playwright": {
+      "types": "./config/playwright.d.mts",
+      "default": "./config/playwright.mjs"
+    },
+    "./next": {
+      "types": "./config/next.d.mts",
+      "default": "./config/next.mjs"
+    },
+    "./e2e": {
+      "types": "./config/e2e.d.mts",
+      "default": "./config/e2e.mjs"
+    }
   },
   "scripts": {
     "lint": "eslint",

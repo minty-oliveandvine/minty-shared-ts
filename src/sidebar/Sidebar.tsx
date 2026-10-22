@@ -37,12 +37,12 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type ReactNode,
   type RefObject,
 } from "react";
 
 import { requireSidebarHost } from "../host";
+import { useMounted } from "../lib/clientValue";
 import { SIDEBAR_LOOK, type Look } from "./looks";
 import { SideMenu, type MenuContext } from "./SideMenu";
 
@@ -90,14 +90,9 @@ export function useLook(): Look {
 }
 
 // The drawer is a portal, and the cookie and the URL its menu reads exist only in the browser:
-// "mounted" is the server/client seam.
-const noSubscribe = () => () => {};
-const clientTrue = () => true;
-const serverFalse = () => false;
-
-export function useMounted(): boolean {
-  return useSyncExternalStore(noSubscribe, clientTrue, serverFalse);
-}
+// "mounted" is the server/client seam - `useMounted`, in ../lib/clientValue.ts since the
+// shared-code refactor (2026-10-21), still exported from here.
+export { useMounted };
 
 const FOCUSABLE = "a[href], button:not([disabled]), input:not([disabled])";
 
