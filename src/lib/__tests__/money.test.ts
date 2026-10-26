@@ -13,6 +13,8 @@ import {
   amountIntegerDigits,
   cleanAmountString,
   formatAmount,
+  formatAmountTyping,
+  formatCountTyping,
   formatMoney,
   formatPrice,
   CODE_SPACE,
@@ -289,5 +291,93 @@ describe("toAmountEditString", () => {
 
   it("round-trips a formatted amount back through formatAmount", () => {
     expect(formatAmount(toAmountEditString(formatAmount(1234567.891)))).toBe("1,234,567.89");
+  });
+});
+
+describe("formatAmountTyping", () => {
+  const typed = (text: string, caret = text.length, decimals?: number) =>
+    formatAmountTyping({ text, caret }, decimals);
+
+  it("groups at every keystroke, keeping a trailing point or part of the places", () => {
+    expect(typed("1234")).toEqual({ text: "1,234", caret: 5 });
+    expect(typed("1234567.5")).toEqual({ text: "1,234,567.5", caret: 11 });
+    expect(typed("1,234.")).toEqual({ text: "1,234.", caret: 6 });
+    expect(typed("")).toEqual({ text: "", caret: 0 });
+  });
+
+  it("keeps the caret beside the digit it followed when a comma comes or goes", () => {
+    // "1,234" with "5" typed after the "1" -> "15,234", caret still after the "5".
+    expect(typed("15,234", 2)).toEqual({ text: "15,234", caret: 2 });
+    expect(typed("123,456", 1)).toEqual({ text: "123,456", caret: 1 });
+    // "999" + "9" in front -> "9,999", caret after the new digit.
+    expect(typed("9999", 1)).toEqual({ text: "9,999", caret: 1 });
+    // "1,000" with the "1" deleted -> "0" (leading zeros go), caret at the start.
+    expect(typed(",000", 0)).toEqual({ text: "0", caret: 0 });
+  });
+
+  it("drops leading zeros but reads a lone point as 0.", () => {
+    expect(typed("05")).toEqual({ text: "5", caret: 1 });
+    expect(typed("0012")).toEqual({ text: "12", caret: 2 });
+    expect(typed("0")).toEqual({ text: "0", caret: 1 });
+    expect(typed(".")).toEqual({ text: "0.", caret: 2 });
+    expect(typed("0.5")).toEqual({ text: "0.5", caret: 3 });
+  });
+
+  it("refuses what acceptAmountInput refuses", () => {
+    expect(typed("123,456,789,012")).toBeNull();
+    expect(typed("1.234")).toBeNull();
+    expect(typed("1.2.")).toBeNull();
+    expect(typed("12a")).toBeNull();
+    expect(typed("-5")).toBeNull();
+    expect(typed("12.", undefined, 0)).toBeNull();
+  });
+
+  it("takes the currency's places", () => {
+    expect(typed("1234", 4, 0)).toEqual({ text: "1,234", caret: 5 });
+    expect(typed("1.234", 5, 3)).toEqual({ text: "1.234", caret: 5 });
+  });
+
+  it("Backspace on a comma takes the digit before it", () => {
+    // "1,234" with the caret after the comma; Backspace removed the comma.
+    const r = formatAmountTyping({
+      text: "1234",
+      caret: 1,
+      previous: "1,234",
+      inputType: "deleteContentBackward",
+    });
+    expect(r).toEqual({ text: "234", caret: 0 });
+  });
+
+  it("Delete on a comma takes the digit after it", () => {
+    const r = formatAmountTyping({
+      text: "1234",
+      caret: 1,
+      previous: "1,234",
+      inputType: "deleteContentForward",
+    });
+    expect(r).toEqual({ text: "134", caret: 1 });
+  });
+
+  it("a paste keeps only the number in it", () => {
+    const r = formatAmountTyping({
+      text: "HKD 1,234.5",
+      caret: 12,
+      previous: "",
+      inputType: "insertFromPaste",
+    });
+    expect(r).toEqual({ text: "1,234.5", caret: 7 });
+  });
+});
+
+describe("formatCountTyping", () => {
+  it("groups whole numbers and refuses a point, a letter or one digit too many", () => {
+    expect(formatCountTyping({ text: "1000000", caret: 7 }, 7)).toEqual({
+      text: "1,000,000",
+      caret: 9,
+    });
+    expect(formatCountTyping({ text: "12345678", caret: 8 }, 7)).toBeNull();
+    expect(formatCountTyping({ text: "1.5", caret: 3 }, 7)).toBeNull();
+    expect(formatCountTyping({ text: "1a", caret: 2 }, 7)).toBeNull();
+    expect(formatCountTyping({ text: "007", caret: 3 }, 7)).toEqual({ text: "7", caret: 1 });
   });
 });

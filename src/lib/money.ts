@@ -8,10 +8,12 @@
  * (Petty Cash: "No currency selected"). One exception: a PRICE on the onboarding and subscription
  * screens drops a trailing ".00" ("HKD 400") - formatPrice.
  *
- * Entry: while a field is focused the person sees plain digits; grouping is applied on blur.
- * Typing is capped at MAX_AMOUNT_INT_DIGITS digits before the point and the currency's places
- * after it (no point at all for 0); a keystroke past that is refused, never truncated, so the
- * caret never jumps.
+ * Entry (owner, 2026-10-26): the commas appear as the person types - formatAmountTyping, with the
+ * caret kept on the same digit - and blur only pads the places (formatAmount: "1,234.5" ->
+ * "1,234.50"). Typing is capped at MAX_AMOUNT_INT_DIGITS digits before the point and the
+ * currency's places after it (no point at all for 0); a keystroke past that is refused, never
+ * truncated, so the caret never jumps. Counts (formatCountTyping) group the same way, with no
+ * point. The React side is useAmountInput in ./amountInput.
  *
  * Grouping and rounding are string work rather than parseFloat/toLocaleString, so a 12-digit
  * amount keeps every digit; extra decimals are cut off, not rounded ("9.999" -> "9.99").
@@ -179,4 +181,94 @@ export function acceptAmountInput(
 export function toAmountEditString(raw: string | number | null | undefined): string {
   if (raw === null || raw === undefined) return "";
   return cleanAmountString(raw);
+}
+
+/** One edit in a number field, as the change event reports it. */
+export type TypingEdit = {
+  /** The field's value after the edit (`input.value`). */
+  text: string;
+  /** Where the caret sits in `text` (`input.selectionStart`). */
+  caret: number;
+  /** The value before the edit - lets a delete over a comma take the digit beside it. */
+  previous?: string;
+  /** `InputEvent.inputType` ("deleteContentBackward", "insertFromPaste"...). */
+  inputType?: string;
+};
+
+/** The formatted value and where to put the caret; null refuses the edit. */
+export type TypingResult = { text: string; caret: number } | null;
+
+const isNumberChar = (ch: string) => (ch >= "0" && ch <= "9") || ch === ".";
+
+/**
+ * Shared by the amount and count typers: strip the grouping, check the edit with `accept`, drop
+ * leading zeros, regroup, and put the caret back after the same number of digits it followed.
+ */
+function formatTyping(edit: TypingEdit, accept: (plain: string) => string | null): TypingResult {
+  let { text, caret } = edit;
+  const { previous, inputType } = edit;
+
+  // A paste or drop brings its own decoration ("HKD 1,234.50"); keep only the number in it.
+  if (inputType === "insertFromPaste" || inputType === "insertFromDrop") {
+    const head = text.slice(0, caret).replace(/[^\d.,]/g, "");
+    text = head + text.slice(caret).replace(/[^\d.,]/g, "");
+    caret = head.length;
+  }
+
+  // Backspace or Delete took only a comma: take the digit beside it instead, or nothing changes.
+  if (previous !== undefined && text.length === previous.length - 1) {
+    if (inputType === "deleteContentBackward" && previous[caret] === ",") {
+      if (caret === 0) return null;
+      text = text.slice(0, caret - 1) + text.slice(caret);
+      caret -= 1;
+    } else if (inputType === "deleteContentForward" && previous[caret] === ",") {
+      text = text.slice(0, caret) + text.slice(caret + 1);
+    }
+  }
+
+  let digitsBefore = [...text.slice(0, caret)].filter(isNumberChar).length;
+  const plain = accept(text);
+  if (plain === null) return null;
+
+  const [intRaw = "", dec] = plain.split(".");
+  // "0012" -> "12" and "05" -> "5", but a lone "0" stays, and ".5" reads "0.5".
+  const zeros = intRaw.length - intRaw.replace(/^0+/, "").length;
+  const keep = intRaw.length > 0 && intRaw.length === zeros && dec === undefined ? 1 : 0;
+  let intPart = intRaw.slice(zeros - keep);
+  digitsBefore -= Math.min(digitsBefore, zeros - keep);
+  if (intPart === "" && dec !== undefined) {
+    intPart = "0";
+    digitsBefore += 1;
+  }
+
+  const out = `${groupThousands(intPart)}${dec !== undefined ? `.${dec}` : ""}`;
+  let pos = 0;
+  for (let seen = 0; pos < out.length && seen < digitsBefore; pos += 1) {
+    if (isNumberChar(out[pos]!)) seen += 1;
+  }
+  return { text: out, caret: pos };
+}
+
+/**
+ * An amount as it is typed: grouped in threes at every keystroke ("1234567.5" ->
+ * "1,234,567.5"), the caret kept beside the digit it followed. The limits are acceptAmountInput's:
+ * a 12th whole digit, a third place, a second point, a letter or a minus refuses the edit (null),
+ * so the caller leaves the field as it was. Blur pads the places with formatAmount.
+ */
+export function formatAmountTyping(
+  edit: TypingEdit,
+  decimals: number = MAX_AMOUNT_DECIMALS,
+): TypingResult {
+  return formatTyping(edit, (text) => acceptAmountInput(text, decimals));
+}
+
+/**
+ * A whole-number count as it is typed ("1000000" -> "1,000,000"): digits only, at most
+ * `maxDigits` of them; anything else refuses the edit (null).
+ */
+export function formatCountTyping(edit: TypingEdit, maxDigits: number): TypingResult {
+  return formatTyping(edit, (text) => {
+    const cleaned = cleanAmountString(text);
+    return /^\d*$/.test(cleaned) && cleaned.length <= maxDigits ? cleaned : null;
+  });
 }
