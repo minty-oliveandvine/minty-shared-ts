@@ -193,6 +193,11 @@ v0.6 it is one `ProfilePanel`, drawn in the shared tokens - the same values mint
 tokens held, so the look did not move. No PASSWORD row: Minty holds no password (the owner,
 2026-10-20).
 
+v0.10: the email's shape is checked. Besides blank ("We'll need an email here.") and non-English,
+an email that is not an address (`isEmail`) is refused before anything is sent - "That email
+address doesn't look right." - shown under the field once it has been left or Save tried, and
+gone as soon as a valid one is typed. The names stay optional.
+
 ```tsx
 <SidebarProvider profile={<ProfilePanel api={profileApi} notify={toast} />}>
 ```

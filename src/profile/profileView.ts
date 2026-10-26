@@ -6,7 +6,7 @@
  * 2026-10-20).
  */
 
-import { EMAIL_ASCII_HINT, hasNonAsciiEmailChar } from "../lib/emailInput";
+import { EMAIL_ASCII_HINT, hasNonAsciiEmailChar, isEmail } from "../lib/emailInput";
 import type { ProfileChanges, ProfileCompany } from "./types";
 
 export const PAGE_TITLE = "My Profile";
@@ -19,6 +19,7 @@ export const CANCEL = "Cancel";
 export const LOAD_FAILED = "Your profile didn't come through. Mind trying again?";
 export const SAVE_FAILED = "That didn't quite save. Mind trying again?";
 export const EMAIL_REQUIRED = "We'll need an email here.";
+export const EMAIL_INVALID = "That email address doesn't look right.";
 export const SAVED = "Your profile is saved.";
 
 export type PlanLabel = { text: string; plan: "superminty" | "payment" | "petty"; cat: boolean };
@@ -37,13 +38,27 @@ export function planLabel(company: ProfileCompany | null): PlanLabel | null {
   return null;
 }
 
-/** Only what changed is sent; an emptied email is refused here, with the old profile's words. */
+/**
+ * The email's shape (v0.10), apart from the blank and non-English checks: `EMAIL_INVALID` for a
+ * typed, English-only value that is not an address, else null. The card shows it under the field.
+ */
+export function emailShapeError(email: string): string | null {
+  if (!email.trim() || hasNonAsciiEmailChar(email) || isEmail(email)) return null;
+  return EMAIL_INVALID;
+}
+
+/**
+ * Only what changed is sent; an emptied email is refused here, with the old profile's words, and
+ * so is one that is not shaped like an address. The names are optional.
+ */
 export function changesFrom(
   draft: Required<ProfileChanges>,
   saved: Required<ProfileChanges>,
 ): { changes: ProfileChanges; error: string | null } {
   if (!draft.email.trim()) return { changes: {}, error: EMAIL_REQUIRED };
   if (hasNonAsciiEmailChar(draft.email)) return { changes: {}, error: EMAIL_ASCII_HINT };
+  const shape = emailShapeError(draft.email);
+  if (shape) return { changes: {}, error: shape };
   const changes: ProfileChanges = {};
   for (const key of ["first_name", "last_name", "email"] as const) {
     if (draft[key].trim() !== saved[key]) changes[key] = draft[key];

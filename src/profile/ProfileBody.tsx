@@ -40,6 +40,8 @@ export function ProfileBody({
             draft={p.draft}
             saving={p.saving}
             error={p.saveError}
+            emailError={p.emailError}
+            onEmailLeave={p.leaveEmail}
             onEdit={p.startEditing}
             onCancel={p.stopEditing}
             onChange={p.change}

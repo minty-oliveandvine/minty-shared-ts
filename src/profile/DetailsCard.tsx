@@ -2,7 +2,7 @@
  * The details card (Figma 10-A): first and last name and the email - each on its teal tile - with
  * "Edit" in the corner. Editing happens in the card: the names and the email become fields,
  * "Edit" becomes "Cancel", and Save sits under them; a refusal is shown in the card, in Flask's
- * words. No PASSWORD row: Minty holds no password (the owner, 2026-10-20). The classes are the
+ * words. An email not shaped like one is said under the field (v0.10). No PASSWORD row: Minty holds no password (the owner, 2026-10-20). The classes are the
  * look's (`./looks.ts`).
  */
 
@@ -55,6 +55,9 @@ export type DetailsCardProps = {
   draft: Draft | null;
   saving: boolean;
   error: string | null;
+  /** The email's shape, once the field has been left or Save tried (`useProfile`). */
+  emailError: string | null;
+  onEmailLeave: () => void;
   onEdit: () => void;
   onCancel: () => void;
   onChange: (field: keyof Draft, value: string) => void;
@@ -67,6 +70,8 @@ export function DetailsCard({
   draft,
   saving,
   error,
+  emailError,
+  onEmailLeave,
   onEdit,
   onCancel,
   onChange,
@@ -75,6 +80,7 @@ export function DetailsCard({
 }: DetailsCardProps) {
   const editing = draft !== null;
   const emailInput = useEmailInput((value) => onChange("email", value));
+  const emailHint = emailInput.rejected ? EMAIL_ASCII_HINT : emailError;
   return (
     <section className={L.card} aria-label="Your details">
       <div className={L.editRow}>
@@ -152,13 +158,15 @@ export function DetailsCard({
                   // label for it - only a mail tile - so there is nowhere to hang the asterisk.
                   // Announced here; a visible label is a layout decision, not a code one.
                   aria-required="true"
-                  aria-describedby={emailInput.rejected ? "profile-email-hint" : undefined}
+                  aria-invalid={emailError ? true : undefined}
+                  aria-describedby={emailHint ? "profile-email-hint" : undefined}
                   value={draft.email}
                   maxLength={255}
+                  onBlur={onEmailLeave}
                 />
-                {emailInput.rejected && (
+                {emailHint && (
                   <p id="profile-email-hint" className={L.emailHint} role="status">
-                    {EMAIL_ASCII_HINT}
+                    {emailHint}
                   </p>
                 )}
               </>

@@ -123,6 +123,29 @@ describe.each<Look>(["v2", "classic"])("ProfilePanel (%s)", (each) => {
     expect(notify).not.toHaveBeenCalled();
   });
 
+  it("checks the email's shape once it is left or on Save, and clears it as a valid one is typed", async () => {
+    api.load.mockResolvedValue(UNSCOPED);
+    show();
+    const view = await openPanel();
+    const wrong = "That email address doesn't look right.";
+    await userEvent.click(await view.findByRole("button", { name: "Edit" }));
+    const email = view.getByRole("textbox", { name: "Email" });
+    await userEvent.clear(email);
+    await userEvent.type(email, "j@x");
+    expect(view.queryByText(wrong)).toBeNull(); // half-typed: waits until the field is left
+    await userEvent.tab();
+    expect(view.getByText(wrong)).toBeInTheDocument();
+    expect(email).toHaveAttribute("aria-invalid", "true");
+    await userEvent.type(email, ".com");
+    expect(view.queryByText(wrong)).toBeNull();
+
+    await userEvent.clear(email);
+    await userEvent.type(email, "nope{Enter}");
+    expect(view.getByText(wrong)).toBeInTheDocument();
+    expect(view.getAllByText(wrong)).toHaveLength(1); // inline only, not again under Save
+    expect(api.save).not.toHaveBeenCalled();
+  });
+
   it("a failed read offers to try again; a 401 shows nothing (the app is already re-signing in)", async () => {
     api.load
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))

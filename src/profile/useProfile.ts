@@ -9,13 +9,22 @@
  * - A save sends only what changed, answers with the fresh profile, and tells the header and the
  *   side menu the new name at once (`primeViewer`). A refusal is Flask's sentence, shown in the
  *   card; the card stays open so nothing typed is lost.
+ * - An email that is not shaped like one (v0.10) is shown under the field instead, once the field
+ *   has been left or Save tried, and goes as soon as a valid one is typed (`emailError`).
  */
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 import { requireSidebarHost } from "../host";
 import { primeViewer } from "../lib/viewer";
-import { changesFrom, LOAD_FAILED, SAVE_FAILED, SAVED } from "./profileView";
+import {
+  changesFrom,
+  EMAIL_INVALID,
+  emailShapeError,
+  LOAD_FAILED,
+  SAVE_FAILED,
+  SAVED,
+} from "./profileView";
 import {
   isRefusal,
   type Profile,
@@ -49,6 +58,8 @@ export function useProfile(api: ProfileApi, notify: ProfileNotify) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // The email field has been left, or Save tried: from then its shape is checked as it is typed.
+  const [emailChecked, setEmailChecked] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -74,11 +85,13 @@ export function useProfile(api: ProfileApi, notify: ProfileNotify) {
     if (!profile) return;
     setDraft(draftOf(profile));
     setSaveError(null);
+    setEmailChecked(false);
   }, [profile]);
 
   const stopEditing = useCallback(() => {
     setDraft(null);
     setSaveError(null);
+    setEmailChecked(false);
   }, []);
 
   const change = useCallback((field: keyof Draft, value: string) => {
@@ -88,6 +101,10 @@ export function useProfile(api: ProfileApi, notify: ProfileNotify) {
   const save = useCallback(async () => {
     if (!profile || !draft || saving) return;
     const { changes, error } = changesFrom(draft, draftOf(profile));
+    if (error === EMAIL_INVALID) {
+      setEmailChecked(true);
+      return;
+    }
     if (error) {
       setSaveError(error);
       return;
@@ -123,6 +140,8 @@ export function useProfile(api: ProfileApi, notify: ProfileNotify) {
     editing: draft !== null,
     saving,
     saveError,
+    emailError: emailChecked && draft ? emailShapeError(draft.email) : null,
+    leaveEmail: useCallback(() => setEmailChecked(true), []),
     startEditing,
     stopEditing,
     change,
