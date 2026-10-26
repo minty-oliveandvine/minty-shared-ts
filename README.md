@@ -198,6 +198,8 @@ an email that is not an address (`isEmail`) is refused before anything is sent -
 address doesn't look right." - shown under the field once it has been left or Save tried, and
 gone as soon as a valid one is typed. The names stay optional.
 
+v0.11: an invalid email gets a red border in both looks (classic #b42318, v2 the Part 13 danger ring).
+
 ```tsx
 <SidebarProvider profile={<ProfilePanel api={profileApi} notify={toast} />}>
 ```

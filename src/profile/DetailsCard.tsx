@@ -151,7 +151,7 @@ export function DetailsCard({
             {editing ? (
               <>
                 <input
-                  className={L.field}
+                  className={emailError ? `${L.field} ${L.fieldInvalid}` : L.field}
                   {...emailInput.props}
                   aria-label="Email"
                   // Mandatory (profileView refuses a blank one), but this card shows no visible

@@ -59,6 +59,9 @@ export const PROFILE_LOOK = {
     value: "text-body-m text-text-primary",
     field:
       "mt-0.5 h-11 w-full rounded-lg border border-border-input bg-surface-card px-3 text-body-m text-text-primary focus:border-border-selected focus:outline-none focus:ring-1 focus:ring-border-selected/25",
+    // invalid: the 2px danger ring ui/Field.tsx draws (owner, 2026-10-26: both looks turn red)
+    fieldInvalid:
+      "border-2! border-action-danger! focus:border-action-danger! focus:ring-action-danger/25!",
     tile: "flex size-8 shrink-0 items-center justify-center rounded-lg bg-state-selected",
     row: "flex items-center gap-4",
     emailHint: "mt-1 text-label text-status-danger-ink",
@@ -126,6 +129,9 @@ export const PROFILE_LOOK = {
     value: "text-sm leading-5 text-[#6b7280]",
     field:
       "mt-0.5 w-full rounded-[6px] border border-[#d9dde3] bg-white px-2 py-1 text-sm leading-5 text-[#374151] focus:border-[#54d3da] focus:outline-none focus:ring-1 focus:ring-[#54d3da]",
+    // An invalid email (v0.11): the look's own danger colour, its hint's #b42318. Important,
+    // so it beats the field's own grey and teal border colours whatever the stylesheet order.
+    fieldInvalid: "border-[#b42318]! focus:border-[#b42318]! focus:ring-[#b42318]!",
     tile: "flex size-8 shrink-0 items-center justify-center rounded-[6px] bg-[rgba(84,211,218,0.1)]",
     row: "flex items-center gap-[18px]",
     emailHint: "mt-1 text-[12px] text-[#b42318]",

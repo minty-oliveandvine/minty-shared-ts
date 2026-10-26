@@ -146,6 +146,25 @@ describe.each<Look>(["v2", "classic"])("ProfilePanel (%s)", (each) => {
     expect(api.save).not.toHaveBeenCalled();
   });
 
+  it("an invalid email turns its border red, and back once it is fixed", async () => {
+    api.load.mockResolvedValue(UNSCOPED);
+    show();
+    const view = await openPanel();
+    await userEvent.click(await view.findByRole("button", { name: "Edit" }));
+    const email = view.getByRole("textbox", { name: "Email" });
+    // classic: the look's own danger colour (#b42318, its hint's); v2: the Part 13 danger ring
+    // ui/Field.tsx draws on an invalid field (owner, 2026-10-26: both looks turn red)
+    const red = each === "classic" ? "border-[#b42318]!" : "border-action-danger!";
+    await userEvent.clear(email);
+    await userEvent.type(email, "j@x");
+    await userEvent.tab();
+    expect(email).toHaveAttribute("aria-invalid", "true");
+    expect(email.className.split(/\s+/)).toContain(red);
+    await userEvent.type(email, ".com");
+    expect(email).not.toHaveAttribute("aria-invalid");
+    expect(email.className.split(/\s+/)).not.toContain(red);
+  });
+
   it("a failed read offers to try again; a 401 shows nothing (the app is already re-signing in)", async () => {
     api.load
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
