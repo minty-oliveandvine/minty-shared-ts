@@ -3,8 +3,8 @@
 /**
  * My Profile's body (Figma 10-A / 10-B): the head, the details card, the `subscriptions` slot and
  * Log Out, with the loading and failed states. Whoever draws it reads the profile (`useProfile`)
- * and hands it in - the sidebar's `ProfilePanel`, or an app's own `/profile` page. `look`: the
- * design, when drawn outside a sidebar (else the sidebar's).
+ * and hands it in - the sidebar's `ProfilePanel` (no app draws a profile page since 2026-11-03).
+ * `look`: the design, when drawn outside a sidebar (else the sidebar's).
  */
 
 import type { ReactNode } from "react";

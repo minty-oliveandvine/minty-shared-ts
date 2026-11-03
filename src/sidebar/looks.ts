@@ -44,6 +44,8 @@ export const SIDEBAR_LOOK = {
     moduleTitle: "text-title-l font-semibold",
     person:
       "mt-8 flex min-h-11 w-full cursor-pointer items-center gap-10 rounded-md py-1 pl-9 text-left transition-colors duration-100 hover:bg-state-hover aria-[current=page]:bg-state-selected focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus",
+    /** The person, where no profile slot can open (v0.12): the same block, not a control. */
+    personStatic: "mt-8 flex min-h-11 w-full items-center gap-10 rounded-md py-1 pl-9 text-left",
     avatar:
       "flex h-[57px] w-[56px] shrink-0 items-center justify-center rounded-full bg-accent-avatar-bg text-display-l font-medium text-accent-avatar-ink",
     name: "max-w-[130px] break-words text-title-l text-text-primary",
@@ -90,6 +92,9 @@ export const SIDEBAR_LOOK = {
     moduleTitle: "text-[18px] font-bold leading-[22px]",
     person:
       "mt-[30px] flex w-full cursor-pointer items-center gap-[40px] rounded-[12px] py-[3px] pl-[35px] text-left hover:bg-[#f5f5f5]",
+    /** The person, where no profile slot can open (v0.12): the same block, not a control. */
+    personStatic:
+      "mt-[30px] flex w-full items-center gap-[40px] rounded-[12px] py-[3px] pl-[35px] text-left",
     avatar:
       "flex h-[57px] w-[56px] shrink-0 items-center justify-center rounded-[91px] bg-[#ffe6b1] text-[30px] font-medium text-[#6b3a12]",
     name: "max-w-[130px] break-words text-[18px] leading-[22px] text-[#1f2937]",

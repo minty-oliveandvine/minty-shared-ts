@@ -6,7 +6,8 @@
  * morning's hover-only badge). The menu's name opens the same view.
  *
  * Without a sidebar that can hold the profile (a screen on its own), the badge is a link to the
- * `/profile` page instead - the same place, the long way round.
+ * entity list, named "Select Entity" for where it goes: there is no profile page to open (the
+ * owner, 2026-11-03 - My Profile opens only in the sidebar).
  *
  * `viewer` is what the page already knows (the module page's own model names the viewer);
  * without one the badge reads it once per token from Flask (`lib/viewer.ts`). Drawn only once
@@ -51,7 +52,12 @@ export function ViewerBadge({ viewer }: { viewer?: Viewer | null }) {
     );
   }
   return (
-    <a href={host.links.profile()} className={L.badge} aria-label={label} title={person.name}>
+    <a
+      href={host.links.entities()}
+      className={L.badge}
+      aria-label="Select Entity"
+      title={person.name}
+    >
       <span className={L.badgeCircle} aria-hidden>
         {person.initials}
       </span>

@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { installFakeHost, type FakeHost } from "../../../test/fakeHost";
 import { _resetSidebarHostForTests, requireSidebarHost, setSidebarHost } from "../../host";
 import { NavMenu } from "../NavMenu";
+import { ViewerBadge } from "../ViewerBadge";
 import { SidebarProvider } from "../Sidebar";
 
 // The fake host's usePathname reads window.location, as a real app's router would reflect it.
@@ -194,5 +195,46 @@ describe("the packaged sidebar", () => {
 
     await waitFor(() => expect(menu()).not.toBeInTheDocument());
     expect(screen.queryByText("the profile slot")).not.toBeInTheDocument();
+  });
+});
+
+// No app has a profile PAGE any more (the owner, 2026-11-03: My Profile opens only in the
+// sidebar). Without a slot to open it in, nothing pretends to open it.
+describe("with no profile slot", () => {
+  const ANN = { name: "Ann Lee", initials: "AL" };
+
+  beforeEach(() => {
+    host = installFakeHost();
+    at("/entities");
+  });
+
+  it("draws the menu's person as plain text - no link, no button", async () => {
+    render(
+      <SidebarProvider>
+        <NavMenu viewer={ANN} />
+      </SidebarProvider>,
+    );
+    await open();
+    const nav = menu()!;
+    // shown, and read out once (the drawn name is aria-hidden, as on the button)
+    expect(
+      within(nav).getByText("Ann Lee", { ignore: '[aria-hidden="true"], [aria-hidden="true"] *' }),
+    ).toHaveClass("sr-only");
+    expect(within(nav).queryByRole("link", { name: /My Profile/ })).toBeNull();
+    expect(within(nav).queryByRole("button", { name: /My Profile/ })).toBeNull();
+  });
+
+  it("the same in the ≡'s own drawer, outside any provider", async () => {
+    render(<NavMenu viewer={ANN} />);
+    await open();
+    expect(within(menu()!).queryByRole("link", { name: /My Profile/ })).toBeNull();
+  });
+
+  it("links the header's initials to the entity list, and names it so", () => {
+    render(<ViewerBadge viewer={ANN} />);
+    const badge = screen.getByRole("link", { name: "Select Entity" });
+    expect(badge).toHaveAttribute("href", "/entities");
+    expect(badge).toHaveAttribute("title", "Ann Lee");
+    expect(screen.queryByRole("link", { name: /My Profile/ })).toBeNull();
   });
 });

@@ -18,13 +18,12 @@
  * feature - and is mounted only once asked for, so nothing is read before then.
  *
  * Without a provider (a screen rendered on its own, as the screen tests do) the ≡ keeps a
- * drawer of its own with the menu only, and the initials and the menu's name are links to the
- * `/profile` page - a page can never lose its menu. That page stays for Minty's `/profile`
- * router and the links that still use it.
+ * drawer of its own with the menu only. My Profile opens only in the sidebar - no app has a
+ * profile page since 2026-11-03 (the owner) - so with no slot to open it in, the menu's name is
+ * plain text and the initials link to the entity list.
  *
- * ONE implementation since 2026-10-12, shared by every app that mounts it. Two things differ per
- * app and come from the host (`../host.ts`): how the page's scroll is held, and which path is the
- * profile page (minty-payment-request-web has none).
+ * ONE implementation since 2026-10-12, shared by every app that mounts it. What differs per app
+ * comes from the host (`../host.ts`), how the page's scroll is held among it.
  */
 
 import { createPortal } from "react-dom";
@@ -62,7 +61,7 @@ export type SidebarControls = {
   close: () => void;
   /** The page's own knowledge for the menu (fresh modules, a known viewer) - set by its ≡. */
   setMenuContext: (context: MenuContext) => void;
-  /** Whether My Profile opens in here - the shell filled the slot. Else it is the `/profile` page. */
+  /** Whether My Profile opens in here - the shell filled the slot. Else it cannot open at all. */
   canOpenProfile: boolean;
   /** The menu stands as a rail on the right from 1280px (the provider's `rail`); the ≡ hides there. */
   rail: boolean;
@@ -268,8 +267,8 @@ export function SidebarProvider({
     ],
   );
 
-  // The menu's name: My Profile in place - or, on the profile page itself, just close. An app
-  // with no profile page of its own never reports "profile", so it always switches the view.
+  // The menu's name: My Profile in place - or, on a profile page, just close. No app has one since
+  // 2026-11-03 or reports "profile", so it always switches the view; kept for a host that might.
   const toProfile = useCallback(() => {
     if (host.currentOf(pathname) === "profile") close();
     else setState((s) => ({ ...s, view: "profile" }));

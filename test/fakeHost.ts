@@ -46,7 +46,6 @@ export function installFakeHost(overrides: Partial<SidebarHost> = {}): FakeHost 
       pettyCashReports: (id: string) => `https://minty.test/entity/${id}/petty-cash/reports`,
       bills: () => "https://bills.test/",
       settings: () => "/entity/abcd1234/acme/settings/modules",
-      profile: () => "/profile",
     },
     usePathname: () => window.location.pathname,
     currentOf: () => current,

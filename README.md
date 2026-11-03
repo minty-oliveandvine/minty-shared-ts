@@ -12,7 +12,7 @@ carries the same font stacks in its own `tailwind.config.ts`, so **change the tw
 | --------------------------- | ----------- | ----------------------------------------------------------- |
 | `minty-web`                 | yes         | yes                                                         |
 | `minty-payment-request-web` | yes         | yes                                                         |
-| `minty-onboarding-web`      | yes         | yes (money, dates, env, errorCopy, emailInput, clientValue) |
+| `minty-onboarding-web`      | yes         | yes (sidebar and profile on `development` since 2026-11-03) |
 | `minty-petty-cash-web`      | yes         | yes, and the first consumer of `ui`                         |
 
 ## The shared modules and presets (v0.7)
@@ -199,6 +199,11 @@ address doesn't look right." - shown under the field once it has been left or Sa
 gone as soon as a valid one is typed. The names stay optional.
 
 v0.11: an invalid email gets a red border in both looks (classic #b42318, v2 the Part 13 danger ring).
+
+v0.12: My Profile opens ONLY in the sidebar - no app has a profile page (the owner, 2026-11-03;
+minty-web's `/profile` is a 404). With no slot to open it in, the menu's name is plain text and
+the header's initials link to the host's `links.entities()`, named "Select Entity" for where they
+go. `links.profile` is unused and optional (`@deprecated`): drop it from the host when bumping.
 
 ```tsx
 <SidebarProvider profile={<ProfilePanel api={profileApi} notify={toast} />}>

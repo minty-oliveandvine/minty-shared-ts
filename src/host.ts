@@ -40,7 +40,12 @@ export type SidebarLinks = {
   bills(): string;
   /** Settings of the app the menu was pressed in (the user's call, 2026-09-30). */
   settings(): string;
-  profile(): string;
+  /**
+   * @deprecated Unused since v0.12: My Profile opens only in the sidebar (the owner, 2026-11-03),
+   * and with no slot the initials lead to `entities()`. Optional so a host that still has it
+   * type-checks; drop it from the host when bumping.
+   */
+  profile?(): string;
 };
 
 export type SidebarHost = {

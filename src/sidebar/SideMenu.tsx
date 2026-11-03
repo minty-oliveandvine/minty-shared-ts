@@ -43,7 +43,8 @@ export type SideMenuProps = MenuContext & {
   onClose: () => void;
   /**
    * The person's block. Given (inside the sidebar), it is a button that does this - switch to
-   * My Profile, or just close on the profile page itself. Omitted, it is a link to `/profile`.
+   * My Profile, or just close on the profile page itself. Omitted (no slot to open it in), it is
+   * the person as plain text: My Profile opens only in the sidebar (the owner, 2026-11-03).
    */
   onProfile?: () => void;
 };
@@ -209,15 +210,12 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
           {who}
         </button>
       ) : (
-        <a
-          href={host.links.profile()}
-          onClick={onClose}
-          aria-current={current === "profile" ? "page" : undefined}
-          aria-label={whoLabel}
-          className={L.person}
-        >
+        // No slot to open My Profile in, and no profile page to go to (the owner, 2026-11-03):
+        // the person, as text.
+        <div className={L.personStatic}>
           {who}
-        </a>
+          {person ? <span className="sr-only">{person.name}</span> : null}
+        </div>
       )}
 
       <div className={L.firstSeparator}>
