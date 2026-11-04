@@ -115,6 +115,21 @@ describe("ErrorSummary", () => {
     await userEvent.click(screen.getByRole("link", { name: /amount is still empty/ }));
     expect(screen.getByLabelText("Amount")).toHaveFocus();
   });
+
+  it("draws in tokens by default and in the classic forms' reds for look='classic'", () => {
+    const items = [
+      { fieldId: "a", message: "The amount is still empty. Add the amount to continue." },
+      { fieldId: "b", message: "The supplier is still empty. Choose a supplier to continue." },
+    ];
+    const { unmount } = render(<ErrorSummary items={items} attempt={1} />);
+    expect(screen.getByRole("alert")).toHaveClass("bg-status-danger-bg", "text-status-danger-ink");
+    unmount();
+    render(<ErrorSummary items={items} attempt={1} look="classic" />);
+    const classic = screen.getByRole("alert");
+    expect(classic).toHaveClass("bg-red-50", "text-red-700", "rounded-[12px]");
+    expect(classic.className).not.toMatch(/status-danger|border-focus/);
+    expect(classic).toHaveFocus();
+  });
 });
 
 describe("FilterChip and SegmentedControl", () => {

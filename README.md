@@ -185,6 +185,29 @@ under the same contract as `SIDEBAR_ASSETS`.
 
 minty-payment-request-web still renders its own copies; it moves to these in its own task.
 
+v0.13: `ErrorSummary` takes `look="classic"` (the plain reds the classic forms' messages use, no
+tokens) for every app's `main`/`development`; `v2`, the token look, stays the default.
+
+### The document reader (`@minty/shared/reader`, v0.13)
+
+Reading an attached receipt or invoice with the model and filling the form's empty fields as
+suggestions (owner, 2026-11-04) - Petty Cash's Add New Expense and Payment Request's new-bill form.
+
+- `core`: the answer (`suggestionsOf`, `failureOf`), a session latch per reader
+  (`createReaderLatch(key)`: a `disabled` answer keeps that reader out of the way for the tab), the
+  reading copy (`readingCopy`: a photo shrunk to 2000px for READING only - saving sends the
+  original), and the rules around a form's own values (`readerState`, `edited`, `cleared`,
+  `usedNote`, `withoutSuggestions`, `fillable`). Never overwrite the person; a field still at its
+  untouched default counts as empty (`touched`; `touchOnSame` for a form with defaults).
+- `useDocumentReader({ post, field, latch, onSuggestions })`: one read at a time, cancellable, and
+  `failed` - the one quiet failure line's switch (a failure reason, a cut connection, or
+  `onSuggestions` returning false because nothing was shown).
+- The classic-look pieces, in hex: `ReadingNotice`, `SuggestedLine`, `ReaderNote`,
+  `ReadFailedLine`, `SUGGESTED_RING`. Each app passes its own words.
+
+Each app keeps its fields and words (minty-petty-cash-web `lib/expenseAi.ts`,
+minty-payment-request-web `lib/invoiceReader.ts`). Needs the `@source` line.
+
 ### My Profile (`@minty/shared/profile`, v0.6)
 
 The sidebar's second view: My Profile opens over the page, never as a page of its own (the
