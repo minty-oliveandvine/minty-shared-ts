@@ -24,8 +24,12 @@ export type ModuleAccess = { pettyCash: boolean; billing: boolean };
 /** Which menu item is the page being shown, for `aria-current` and the profile-page case. */
 export type SideMenuCurrent = "profile" | "entities" | "subscriptions" | "settings" | null;
 
-/** The person looking: what the header's badge and the menu's person block show. */
-export type Viewer = { name: string; initials: string };
+/**
+ * The person looking: what the header's badge and the menu's person block show. `email` (v0.14)
+ * is the "Talk to Minty" chat's one-tap answer to "What email should we reply to?" - optional,
+ * so a host that cannot know it (onboarding's hand-off carries none) simply offers none.
+ */
+export type Viewer = { name: string; initials: string; email?: string };
 
 /**
  * Where each item of the menu leads FROM THIS APP. Functions, not strings: most read the cookie

@@ -118,7 +118,11 @@ export function useProfile(api: ProfileApi, notify: ProfileNotify) {
     try {
       const fresh = await api.save(changes, entityId);
       setLoaded({ attempt, profile: fresh, error: null });
-      primeViewer({ name: fresh.user.name, initials: fresh.user.initials });
+      primeViewer({
+        name: fresh.user.name,
+        initials: fresh.user.initials,
+        email: fresh.user.email || undefined,
+      });
       setDraft(null);
       notify(SAVED, "success");
     } catch (err) {

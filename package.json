@@ -1,6 +1,6 @@
 {
   "name": "@minty/shared",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Minty's shared TypeScript: design tokens, the sidebar, the Part 14 primitives, and the modules every Next.js app had a copy of.",
   "license": "UNLICENSED",
   "type": "module",
@@ -22,6 +22,7 @@
     "./profile": "./src/profile/index.ts",
     "./ui": "./src/ui/index.ts",
     "./reader": "./src/reader/index.ts",
+    "./contact": "./src/contact/index.ts",
     "./viewer": "./src/lib/viewer.ts",
     "./safeNext": "./src/lib/safeNext.ts",
     "./companyRef": "./src/lib/companyRef.ts",

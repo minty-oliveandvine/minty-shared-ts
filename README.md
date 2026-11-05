@@ -208,6 +208,42 @@ suggestions (owner, 2026-11-04) - Petty Cash's Add New Expense and Payment Reque
 Each app keeps its fields and words (minty-petty-cash-web `lib/expenseAi.ts`,
 minty-payment-request-web `lib/invoiceReader.ts`). Needs the `@source` line.
 
+### The Minty cat and "Talk to Minty" (`@minty/shared/contact`, v0.14)
+
+The cat at the bottom right of every app (owner, 2026-11-05). A click opens a pop-up on the cat
+("Hi! How can I help?") listing the page's `actions` - minty-web's entity list puts "Create
+company" there instead of its old floating + - and "Talk to Minty", which opens a scripted chat.
+It opens on the main topics as rows under Minty's greeting (`MAIN_TOPICS`: Contact Support,
+the only one until the bot); picking one opens a new chat in it. Contact Support asks one thing at
+a time - name, email, company (the viewer's name and email, and the company it is in, are one-tap
+answers when the app knows them - `Viewer.email` is optional; an app that has none passes
+`loadEmail`, asked once a page and only when Contact Support opens),
+the topic (`TOPICS`, rows in the chat) and the message - each checked as it is typed, the email
+with Flask's rule (English only, an address and no markup). Then a review of every answer, each
+with its own Edit, and Send. "Change topic" goes back to the main topics (the answers kept), "Ask
+something else" starts over after a send. No AI: `script.ts` is a reducer, so a chat bot can
+replace it later without touching the window.
+
+```tsx
+<ContactLauncher send={(m) => postToFlask("/api/me/contact", m)} notify={toast.show} />
+```
+
+- `send` posts `{name, email, company, topic, message, app, entity?}` to Flask's `POST /api/me/contact` (bearer;
+  minty-onboarding-web through minty-onboarding-api's `/api/onboarding/me/contact`) and resolves
+  with `{reply_to}`; a refusal throws an `Error` whose `message` is the sentence to show. The app
+  id and company id come from the sidebar host; Flask also names the signed-in account.
+- A page adds its own lines while it is mounted: `useContactActions([{ id, label, icon: "add",
+href }])` (a link) or `onSelect` (a callback); pass a stable array.
+- Mount it inside `SidebarProvider` (its look; the rail offset from 1280px) and the app's toast.
+  It draws nothing until the viewer is known, so the sign-in pages show no cat; `hidden` hides it
+  on a public page.
+- The classic look writes its colours in (minty-onboarding-web loads no `tokens.css`); its icons
+  are inline SVG, because the apps load different Material Symbols faces, or none.
+- The motion is `theme.css`'s: the cat bobs, waves on hover, squishes on a tap and hops when a
+  message is sent; the pop-up and window rise out of it, lines pop in, rows lift and press in.
+  Nothing moves under reduced motion. `CONTACT_ASSETS` (`/contact/minty-cat.webp`, minty-www's
+  `support/minty-mascot-chat.webp` cut to 256px) is a `public/` contract like `SIDEBAR_ASSETS`.
+
 ### My Profile (`@minty/shared/profile`, v0.6)
 
 The sidebar's second view: My Profile opens over the page, never as a page of its own (the
