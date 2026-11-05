@@ -37,29 +37,17 @@
   --font-brand: var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* The "Talk to Minty" cat (@minty/shared/contact, v0.14): a gentle idle bob, and a wave when it
-   is hovered or focused. Here, in @theme, because --animate-* is Tailwind's namespace: these
-   generate `animate-minty-bob` and `animate-minty-wave`. The components add
-   `motion-reduce:animate-none`, so neither moves under reduced motion. */
+/* The "Talk to Minty" chat's motion (@minty/shared/contact, v0.14) - the cat itself is an
+   animated clip. Here, in @theme, because --animate-* is Tailwind's namespace: these generate the
+   `animate-minty-*` utilities. The components add `motion-reduce:animate-none`, so nothing moves
+   under reduced motion. */
 @theme {
-  --animate-minty-bob: minty-bob 3.6s ease-in-out infinite;
-  --animate-minty-wave: minty-wave 0.9s ease-in-out 1;
   /* the chat's own motion: a bubble popping in, the pop-up and window rising out of the cat, the
      typing dots, a picked radio's dot, and the cat's hop when a message is sent */
   --animate-minty-pop: minty-pop 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
   --animate-minty-rise: minty-rise 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   --animate-minty-dot: minty-dot 1s ease-in-out infinite;
   --animate-minty-hop: minty-hop 0.7s cubic-bezier(0.3, 0.7, 0.4, 1.4) 1;
-
-  @keyframes minty-bob {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-3px);
-    }
-  }
 
   @keyframes minty-pop {
     from {
@@ -109,25 +97,6 @@
     }
     75% {
       transform: translateY(-4px) scale(1);
-    }
-  }
-
-  @keyframes minty-wave {
-    0%,
-    100% {
-      transform: rotate(0deg);
-    }
-    20% {
-      transform: rotate(-12deg);
-    }
-    40% {
-      transform: rotate(10deg);
-    }
-    60% {
-      transform: rotate(-8deg);
-    }
-    80% {
-      transform: rotate(5deg);
     }
   }
 }

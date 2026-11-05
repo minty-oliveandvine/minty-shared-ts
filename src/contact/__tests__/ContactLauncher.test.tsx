@@ -4,7 +4,7 @@
 // review where any answer can be edited before Send. Each app's own wiring - its fetch to Flask,
 // its toast - is tested in that app.
 
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
@@ -109,11 +109,35 @@ describe("the cat", () => {
     expect(screen.queryByRole("button", { name: "Talk to Minty" })).toBeNull();
   });
 
-  it("shows the cat from the app's public/ and bobs, except under reduced motion", async () => {
+  it("shows the still cat at once, the animated one once it has loaded, the still one under reduced motion", async () => {
+    // jsdom loads no images: a stand-in Image whose load the test fires by hand
+    const preload: { src: string; onload: (() => void) | null } = { src: "", onload: null };
+    vi.stubGlobal(
+      "Image",
+      class {
+        set onload(handler: (() => void) | null) {
+          preload.onload = handler;
+        }
+        set src(value: string) {
+          preload.src = value;
+        }
+      },
+    );
     show();
-    const img = (await cat()).querySelector("img")!;
-    expect(img.getAttribute("src")).toBe(CONTACT_ASSETS[0]);
-    expect(img).toHaveClass("animate-minty-bob", "motion-reduce:animate-none");
+    const button = await cat();
+    const img = button.querySelector("img")!;
+    expect(img.getAttribute("src")).toBe("/contact/minty-cat.webp");
+    expect(preload.src).toBe("/contact/minty-cat-animated.webp");
+    act(() => preload.onload?.());
+    expect(img.getAttribute("src")).toBe("/contact/minty-cat-animated.webp");
+    vi.unstubAllGlobals();
+
+    const still = button.querySelector("source")!;
+    expect(still.getAttribute("srcset")).toBe("/contact/minty-cat.webp");
+    expect(still.getAttribute("media")).toBe("(prefers-reduced-motion: reduce)");
+    expect([...CONTACT_ASSETS]).toEqual(
+      expect.arrayContaining(["/contact/minty-cat.webp", "/contact/minty-cat-animated.webp"]),
+    );
   });
 
   it("opens a pop-up with a greeting and Talk to Minty, which Escape closes back onto the cat", async () => {

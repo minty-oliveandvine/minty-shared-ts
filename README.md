@@ -239,10 +239,10 @@ href }])` (a link) or `onSelect` (a callback); pass a stable array.
   on a public page.
 - The classic look writes its colours in (minty-onboarding-web loads no `tokens.css`); its icons
   are inline SVG, because the apps load different Material Symbols faces, or none.
-- The motion is `theme.css`'s: the cat bobs, waves on hover, squishes on a tap and hops when a
-  message is sent; the pop-up and window rise out of it, lines pop in, rows lift and press in.
-  Nothing moves under reduced motion. `CONTACT_ASSETS` (`/contact/minty-cat.webp`, minty-www's
-  `support/minty-mascot-chat.webp` cut to 256px) is a `public/` contract like `SIDEBAR_ASSETS`.
+- The cat is the owner's own waving clip (an animated WebP, the still frame first and under
+  reduced motion); it squishes on a tap and hops when a message is sent; the pop-up and window rise out of it, lines pop in, rows lift and press in.
+  Nothing moves under reduced motion. `CONTACT_ASSETS` (`/contact/minty-cat.webp` and
+  `/contact/minty-cat-animated.webp`) is a `public/` contract like `SIDEBAR_ASSETS`.
 
 ### My Profile (`@minty/shared/profile`, v0.6)
 

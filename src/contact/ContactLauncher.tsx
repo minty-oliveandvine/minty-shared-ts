@@ -20,8 +20,9 @@ import { requireSidebarHost } from "../host";
 import { useViewer } from "../lib/viewer";
 import { useLook, useSidebar } from "../sidebar/Sidebar";
 import { useRegisteredContactActions, type ContactAction } from "./actions";
+import { CAT_ANIMATED, CAT_STILL } from "./assets";
 import { ContactChat } from "./ContactChat";
-import { AddGlyph, ChatGlyph, MintyAvatar } from "./glyphs";
+import { AddGlyph, ChatGlyph } from "./glyphs";
 import { CONTACT_LOOK } from "./looks";
 import type { Topic } from "./rules";
 import { START, chatReducer, firstName } from "./script";
@@ -84,6 +85,17 @@ export function ContactLauncher({
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [state, dispatch] = useReducer(chatReducer, START);
+  // The still cat shows at once; the animated one (about half a megabyte) replaces it once the
+  // browser has it, and every later page takes it from the cache.
+  const [moving, setMoving] = useState(false);
+  useEffect(() => {
+    const preload = new Image();
+    preload.onload = () => setMoving(true);
+    preload.src = CAT_ANIMATED;
+    return () => {
+      preload.onload = null;
+    };
+  }, []);
   const [loadedEmail, setLoadedEmail] = useState<string | null>(null);
   const emailAsked = useRef(false);
   const wantsEmail = Boolean(state.main && loadEmail && viewer && !viewer.email);
@@ -250,17 +262,25 @@ export function ContactLauncher({
           }}
           className={`group flex size-24 cursor-pointer items-center justify-center rounded-full bg-transparent transition-transform duration-150 active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100 sm:size-28 ${FOCUS_RING} ${look.cat}`}
         >
-          {/* The cat alone, no button behind it, and large (owner, 2026-11-05); the shadow follows
-              its outline so it stays visible over a busy page. It squishes on a tap, and hops
-              once when a message is sent (the outer span; the cat bobs inside it). */}
+          {/* The owner's own waving cat (2026-11-05), no button behind it; the shadow follows
+              its outline so it stays visible over a busy page. It squishes on a tap and hops
+              once when a message is sent (this span). Under reduced motion, the still cat. */}
           <span
             key={state.step === "sent" ? "hop" : "rest"}
             className={`size-full ${state.step === "sent" ? "animate-minty-hop motion-reduce:animate-none" : ""}`}
           >
-            <MintyAvatar
-              size={112}
-              className="size-full animate-minty-bob drop-shadow-[0_4px_6px_rgba(17,19,19,0.28)] group-hover:animate-minty-wave group-focus-visible:animate-minty-wave motion-reduce:animate-none"
-            />
+            <picture>
+              <source srcSet={CAT_STILL} media="(prefers-reduced-motion: reduce)" />
+
+              <img
+                src={moving ? CAT_ANIMATED : CAT_STILL}
+                alt=""
+                width={112}
+                height={112}
+                draggable={false}
+                className="size-full select-none object-contain drop-shadow-[0_4px_6px_rgba(17,19,19,0.28)]"
+              />
+            </picture>
           </span>
         </button>
       </div>

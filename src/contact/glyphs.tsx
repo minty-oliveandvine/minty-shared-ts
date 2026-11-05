@@ -5,7 +5,7 @@
  * the word "close". Decorative - every control that holds one carries its own label.
  */
 
-import { CONTACT_ASSETS } from "./assets";
+import { CAT_STILL } from "./assets";
 
 const svg = (path: string, size: number) => (
   <svg width={size} height={size} viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
@@ -37,12 +37,12 @@ export const AddGlyph = () =>
     20,
   );
 
-/** The Minty cat, from the app's own `public/` (CONTACT_ASSETS). */
+/** The Minty cat, still, from the app's own `public/` (CONTACT_ASSETS). */
 export function MintyAvatar({ size, className = "" }: { size: number; className?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- a packaged component cannot use next/image's loader config
     <img
-      src={CONTACT_ASSETS[0]}
+      src={CAT_STILL}
       alt=""
       width={size}
       height={size}
