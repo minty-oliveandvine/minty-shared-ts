@@ -8,7 +8,9 @@
  * opens a new chat in it. Contact Support asks one question at a time - name, email, company,
  * then the topics (rows in the conversation) and the message - each answer checked as it is
  * typed, the email most of all. Then a review: every answer with its own Edit, and Send. The
- * composer and "Change topic" / "Ask something else" sit at the bottom.
+ * composer sits at the bottom, with "Ask something else" after a send. The header's back arrow
+ * (owner, 2026-11-05 - it was a "Change topic" button at the bottom) goes back to the main
+ * topics from anywhere in a topic's chat before the send, keeping the answers.
  *
  * Non-modal, like any chat: the page stays usable beside it on a computer. Focus moves to what the
  * step asks for, so a keyboard or screen-reader user is always at the question; Escape closes and
@@ -21,7 +23,7 @@
 import { Fragment, useEffect, useId, useRef, type Dispatch, type ReactNode } from "react";
 
 import { EMAIL_ASCII_HINT, useEmailInput } from "../lib/emailInput";
-import { CloseGlyph, MintyAvatar, SendGlyph } from "./glyphs";
+import { BackGlyph, CloseGlyph, MintyAvatar, SendGlyph } from "./glyphs";
 import type { ContactLookClasses } from "./looks";
 import {
   CONTACT_FIELDS,
@@ -298,6 +300,16 @@ export function ContactChat({
       <header
         className={`flex shrink-0 items-center gap-3 px-4 py-3 pt-[max(12px,env(safe-area-inset-top))] sm:pt-3 ${look.header}`}
       >
+        {step !== "main" && step !== "sending" && step !== "sent" ? (
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "changeTopic" })}
+            aria-label="Back to topics"
+            className={`-ml-2 -mr-1 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl ${FOCUS_RING} ${PRESS} ${look.close}`}
+          >
+            <BackGlyph />
+          </button>
+        ) : null}
         <MintyAvatar size={40} />
         <div className="min-w-0 flex-1">
           <h2 id={titleId} className={`text-base font-semibold leading-6 ${look.title}`}>
@@ -329,7 +341,7 @@ export function ContactChat({
         {transcript}
       </div>
 
-      {step === "main" || step === "sending" ? null : (
+      {!asking && step !== "sent" ? null : (
         <div
           className={`flex shrink-0 flex-col gap-2 px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-3 ${look.composer}`}
         >
@@ -419,17 +431,7 @@ export function ContactChat({
                 Ask something else
               </button>
             </div>
-          ) : (
-            <div className={`flex ${asking ? `pt-1 ${look.footer}` : ""}`}>
-              <button
-                type="button"
-                onClick={() => dispatch({ type: "changeTopic" })}
-                className={footerButton}
-              >
-                Change topic
-              </button>
-            </div>
-          )}
+          ) : null}
         </div>
       )}
     </div>

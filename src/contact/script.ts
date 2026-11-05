@@ -12,7 +12,7 @@
  * message - each checked as it is typed. At the end, a review of every answer: each can be edited
  * (back to that one question, then straight back to the review) before Send.
  *
- * "Change topic" goes back to the main topics from anywhere before the send, keeping the answers
+ * "Back to topics" (the header's back arrow) goes back to the main topics from anywhere before the send, keeping the answers
  * (they come back as each question's starting text); "Ask something else" starts over after it.
  */
 

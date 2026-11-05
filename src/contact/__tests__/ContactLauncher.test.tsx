@@ -224,7 +224,15 @@ describe("the chat", () => {
     const rows = within(group).getAllByRole("button");
     expect(rows.map((r) => r.textContent?.replace("›", "").trim())).toEqual([...MAIN_TOPICS]);
     expect(rows[0]).toHaveFocus();
-    expect(view.queryByRole("button", { name: "Change topic" })).toBeNull();
+    expect(view.queryByRole("button", { name: "Back to topics" })).toBeNull();
+  });
+
+  it("heads the chat with the headset cat, round, from the app's public/", async () => {
+    const view = await openChat();
+    const avatar = within(view.getByRole("banner")).getByRole("presentation");
+    expect(avatar).toHaveAttribute("src", "/contact/minty-support.webp");
+    expect(avatar).toHaveClass("rounded-full");
+    expect([...CONTACT_ASSETS]).toContain("/contact/minty-support.webp");
   });
 
   it("opens Contact Support as a new chat that asks for the name first", async () => {
@@ -235,7 +243,9 @@ describe("the chat", () => {
     expect(view.getByLabelText("Your name")).toHaveFocus();
     // the app knows the name: one tap answers it
     expect(view.getByRole("button", { name: "Olive Vine" })).toBeInTheDocument();
-    expect(view.getByRole("button", { name: "Change topic" })).toBeInTheDocument();
+    // the back arrow sits in the header, before Minty's avatar
+    const back = view.getByRole("button", { name: "Back to topics" });
+    expect(back.closest("header")).not.toBeNull();
   });
 
   it("asks name, email, company, topic and message in turn, then reviews and sends them", async () => {
@@ -383,12 +393,12 @@ describe("the chat", () => {
     expect(send.mock.calls[0][0]).not.toHaveProperty("entity");
   });
 
-  it("Change topic goes back to the main topics, and Contact Support picks up the answers again", async () => {
+  it("the header's back arrow goes back to the main topics, and Contact Support picks up the answers again", async () => {
     const view = await openSupport();
     await answer(view, "Your name", "Olive Vine");
     await userEvent.type(view.getByLabelText("Your email"), "half@");
 
-    await userEvent.click(view.getByRole("button", { name: "Change topic" }));
+    await userEvent.click(view.getByRole("button", { name: "Back to topics" }));
     const main = within(view.getByRole("group", { name: "Main topics" })).getAllByRole("button");
     expect(main[0]).toHaveFocus();
     expect(view.getByText("Hi Olive! What can I help you with?")).toBeInTheDocument();
@@ -504,7 +514,7 @@ describe("without the viewer's email", () => {
     expect(await view.findByRole("button", { name: "olive@wizard.test" })).toBeInTheDocument();
 
     // once a page: a second Contact Support asks nothing new
-    await userEvent.click(view.getByRole("button", { name: "Change topic" }));
+    await userEvent.click(view.getByRole("button", { name: "Back to topics" }));
     await userEvent.click(view.getByRole("button", { name: "Contact Support" }));
     expect(loadEmail).toHaveBeenCalledTimes(1);
   });

@@ -220,7 +220,7 @@ answers when the app knows them - `Viewer.email` is optional; an app that has no
 `loadEmail`, asked once a page and only when Contact Support opens),
 the topic (`TOPICS`, rows in the chat) and the message - each checked as it is typed, the email
 with Flask's rule (English only, an address and no markup). Then a review of every answer, each
-with its own Edit, and Send. "Change topic" goes back to the main topics (the answers kept), "Ask
+with its own Edit, and Send. The header's back arrow goes back to the main topics (the answers kept), "Ask
 something else" starts over after a send. No AI: `script.ts` is a reducer, so a chat bot can
 replace it later without touching the window.
 

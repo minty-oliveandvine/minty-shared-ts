@@ -5,7 +5,7 @@
  * the word "close". Decorative - every control that holds one carries its own label.
  */
 
-import { CAT_STILL } from "./assets";
+import { CAT_SUPPORT } from "./assets";
 
 const svg = (path: string, size: number) => (
   <svg width={size} height={size} viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
@@ -16,6 +16,12 @@ const svg = (path: string, size: number) => (
 export const CloseGlyph = () =>
   svg(
     "M480-438 270-228q-9 9-21 9t-21-9q-9-9-9-21t9-21l210-210-210-210q-9-9-9-21t9-21q9-9 21-9t21 9l210 210 210-210q9-9 21-9t21 9q9 9 9 21t-9 21L522-480l210 210q9 9 9 21t-9 21q-9 9-21 9t-21-9L480-438Z",
+    24,
+  );
+
+export const BackGlyph = () =>
+  svg(
+    "m274-450 227 227q9 9 9 21t-9 21q-9 9-21 9t-21-9L181-459q-5-5-7-10t-2-11q0-6 2-11t7-10l278-278q9-9 21-9t21 9q9 9 9 21t-9 21L274-510h496q13 0 21.5 8.5T800-480q0 13-8.5 21.5T770-450H274Z",
     24,
   );
 
@@ -37,17 +43,17 @@ export const AddGlyph = () =>
     20,
   );
 
-/** The Minty cat, still, from the app's own `public/` (CONTACT_ASSETS). */
+/** The chat's header: the headset cat, round, from the app's own `public/` (CONTACT_ASSETS). */
 export function MintyAvatar({ size, className = "" }: { size: number; className?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- a packaged component cannot use next/image's loader config
     <img
-      src={CAT_STILL}
+      src={CAT_SUPPORT}
       alt=""
       width={size}
       height={size}
       draggable={false}
-      className={`shrink-0 select-none object-contain ${className}`}
+      className={`shrink-0 select-none rounded-full object-cover ring-1 ring-black/5 ${className}`}
     />
   );
 }
