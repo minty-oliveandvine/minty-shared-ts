@@ -9,7 +9,8 @@
  *
  * Geometry is shared and lives in the components; only colour, border and shadow differ here.
  * The cat itself stands on the page with no button behind it (owner, 2026-11-05) - only its
- * focus ring is per look.
+ * focus ring is per look. `tab` is what is left on the screen's edge once the cat is tucked
+ * away (v0.15; the pop-up's close, drawn in `close`, tucks it).
  */
 
 import type { Look } from "../sidebar/looks";
@@ -17,6 +18,7 @@ import type { Look } from "../sidebar/looks";
 export const CONTACT_LOOK = {
   v2: {
     cat: "focus-visible:outline-border-focus",
+    tab: "bg-surface-raised border border-border-default shadow-modal hover:bg-state-hover focus-visible:outline-border-focus",
     popup: "bg-surface-raised border border-border-default shadow-modal",
     popupTail: "bg-surface-raised border-r border-b border-border-default",
     popupGreeting: "text-text-primary",
@@ -55,6 +57,7 @@ export const CONTACT_LOOK = {
   },
   classic: {
     cat: "focus-visible:outline-[#3CBCC3]",
+    tab: "bg-white border border-[#E5E7EB] shadow-[0_4px_14px_rgba(17,19,19,0.16)] hover:bg-[#F1F8F8] focus-visible:outline-[#3CBCC3]",
     popup: "bg-white border border-[#E5E7EB] shadow-[0_8px_28px_rgba(17,19,19,0.16)]",
     popupTail: "bg-white border-r border-b border-[#E5E7EB]",
     popupGreeting: "text-[#2B2B2B]",

@@ -12,9 +12,28 @@
  *
  * The conversation lives here, not in the window, so closing and reopening the chat keeps it; a
  * sent message starts the next one fresh. Nothing is stored anywhere else.
+ *
+ * v0.15 (owner, 2026-11-09): the cat stood on a page's last controls (minty-payment-request-web's
+ * pager), so it now leaves room for itself on a page that scrolls - an empty block its height at
+ * the end, so whatever ends in the bottom-right corner can scroll up clear of it - and the pop-up's close
+ * (x, "Tuck Minty away") leaves only a tab on the screen's edge, remembered in this browser
+ * (`./tucked.ts`) until the tab is tapped. Escape still only closes the pop-up. The cat can also be
+ * dragged anywhere on the screen and stays exactly where it is let go (`./place.ts`); a tap still
+ * opens the pop-up.
  */
 
-import { useEffect, useId, useReducer, useRef, useState, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useReducer,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
+import { createPortal } from "react-dom";
 
 import { requireSidebarHost } from "../host";
 import { useViewer } from "../lib/viewer";
@@ -22,10 +41,13 @@ import { useLook, useSidebar } from "../sidebar/Sidebar";
 import { useRegisteredContactActions, type ContactAction } from "./actions";
 import { CAT_ANIMATED, CAT_STILL } from "./assets";
 import { ContactChat } from "./ContactChat";
-import { AddGlyph, ChatGlyph } from "./glyphs";
+import { AddGlyph, ChatGlyph, CloseGlyph } from "./glyphs";
 import { CONTACT_LOOK } from "./looks";
 import type { Topic } from "./rules";
 import { START, chatReducer, firstName } from "./script";
+import { roomHost, usePageNeedsRoom } from "./pageRoom";
+import { readPlace, readPlaceOnServer, setPlace, subscribePlace, type Place } from "./place";
+import { readTucked, readTuckedOnServer, setTucked, subscribeTucked } from "./tucked";
 
 /** What the app's `send` posts: Flask's `POST /api/me/contact` body. */
 export type ContactMessage = {
@@ -65,6 +87,35 @@ export type ContactLauncherProps = {
 const SEND_FAILED = "We couldn't send your message just now. Try again in a moment.";
 const FOCUS_RING = "focus-visible:outline-2 focus-visible:outline-offset-2";
 
+/**
+ * The room the cat (or its tab) takes at the bottom of the screen, as a block at the end of the
+ * page: its height, the gap under it, and 8px more. The cat is 96px, 112px from `sm`; the tab 56px.
+ */
+const CAT_CLEARANCE =
+  "h-[calc(6rem_+_max(1rem,env(safe-area-inset-bottom))_+_0.5rem)] sm:h-[calc(7rem_+_max(1rem,env(safe-area-inset-bottom))_+_0.5rem)]";
+const TAB_CLEARANCE = "h-[calc(3.5rem_+_max(1rem,env(safe-area-inset-bottom))_+_0.5rem)]";
+
+/** A press that moves less than this is a tap, not a drag. */
+const DRAG_PX = 6;
+/** A dragged cat's spot, kept on screen however small the window gets (the cat is 7rem at most). */
+function spotOf(place: Place): CSSProperties {
+  return {
+    right: `clamp(0px, ${place.right}px, calc(100vw - 7rem))`,
+    bottom: `clamp(0px, ${place.bottom}px, calc(100dvh - 7rem))`,
+  };
+}
+
+type Drag = {
+  id: number;
+  px: number;
+  py: number;
+  ox: number;
+  oy: number;
+  w: number;
+  h: number;
+  moved: boolean;
+};
+
 /** The refusal's own sentence, or ours when it has none. */
 function sentenceOf(err: unknown): string {
   const message = (err as { message?: unknown } | null)?.message;
@@ -84,6 +135,13 @@ export function ContactLauncher({
   const rail = useSidebar()?.rail ?? false;
   const [menuOpen, setMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const tucked = useSyncExternalStore(subscribeTucked, readTucked, readTuckedOnServer);
+  const place = useSyncExternalStore(subscribePlace, readPlace, readPlaceOnServer);
+  // While the cat is being dragged: where its box's top-left is, in the viewport.
+  const [dragAt, setDragAt] = useState<{ x: number; y: number } | null>(null);
+  const drag = useRef<Drag | null>(null);
+  // A drag ends in a click on the cat; this swallows that one click.
+  const justDragged = useRef(false);
   const [state, dispatch] = useReducer(chatReducer, START);
   // The still cat shows at once; the animated one (about half a megabyte) replaces it once the
   // browser has it, and every later page takes it from the cache.
@@ -111,8 +169,20 @@ export function ContactLauncher({
       });
   }, [wantsEmail, loadEmail]);
   const cat = useRef<HTMLButtonElement>(null);
+  const tab = useRef<HTMLButtonElement>(null);
+  const room = useRef<HTMLDivElement>(null);
+  // Room only for the cat on its resting spot; one dragged elsewhere chose its own place.
+  const needsRoom = usePageNeedsRoom(!hidden && Boolean(viewer) && place === null, room);
   const menu = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  // Set by a tuck or a bring-back, so focus follows to what is drawn in place of what was pressed.
+  const focusAfterTuck = useRef(false);
+
+  useEffect(() => {
+    if (!focusAfterTuck.current) return;
+    focusAfterTuck.current = false;
+    (tucked ? tab : cat).current?.focus();
+  }, [tucked]);
 
   // The pop-up: focus its first line on open; a click anywhere else closes it.
   useEffect(() => {
@@ -195,10 +265,121 @@ export function ContactLauncher({
   ];
 
   const corner = rail ? "right-4 sm:right-6 xl:right-[calc(280px+1.5rem)]" : "right-4 sm:right-6";
+  // A cat dragged onto the left half opens its pop-up, chat and tab on the left.
+  const left = place !== null && window.innerWidth - place.right - 56 < window.innerWidth / 2;
+  // Near the top of the screen the pop-up opens under the cat instead of over it.
+  const openBelow = window.innerHeight - (place?.bottom ?? 16) - 112 < 260;
+
+  const onPointerDown = (e: PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    const box = e.currentTarget.parentElement!.getBoundingClientRect();
+    drag.current = {
+      id: e.pointerId,
+      px: e.clientX,
+      py: e.clientY,
+      ox: e.clientX - box.left,
+      oy: e.clientY - box.top,
+      w: box.width,
+      h: box.height,
+      moved: false,
+    };
+  };
+
+  const onPointerMove = (e: PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    if (!d.moved) {
+      if (Math.hypot(e.clientX - d.px, e.clientY - d.py) < DRAG_PX) return;
+      d.moved = true;
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+      setMenuOpen(false);
+    }
+    setDragAt({
+      x: Math.min(Math.max(e.clientX - d.ox, 0), window.innerWidth - d.w),
+      y: Math.min(Math.max(e.clientY - d.oy, 0), window.innerHeight - d.h),
+    });
+  };
+
+  const onPointerUp = (e: PointerEvent<HTMLButtonElement>) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d || d.id !== e.pointerId || !d.moved) return;
+    justDragged.current = true;
+    const x = Math.min(Math.max(e.clientX - d.ox, 0), window.innerWidth - d.w);
+    const y = Math.min(Math.max(e.clientY - d.oy, 0), window.innerHeight - d.h);
+    // exactly where it was let go - no snapping (owner, 2026-11-09)
+    setPlace({
+      right: Math.max(0, Math.round(window.innerWidth - (x + d.w))),
+      bottom: Math.max(0, Math.round(window.innerHeight - (y + d.h))),
+    });
+    setDragAt(null);
+  };
+
+  const onPointerCancel = () => {
+    drag.current = null;
+    setDragAt(null);
+  };
+
+  const tuck = (next: boolean) => {
+    setMenuOpen(false);
+    setChatOpen(false);
+    if (state.step === "sent") dispatch({ type: "reset" });
+    focusAfterTuck.current = true;
+    setTucked(next);
+  };
+
+  // Room at the end of a page that scrolls, for the cat or its tab (see CAT_CLEARANCE and
+  // ./pageRoom.ts) - inside the app's scroll wrapper when it has one, or it would add nothing
+  // that scrolls.
+  const clearance = needsRoom
+    ? createPortal(
+        <div
+          ref={room}
+          aria-hidden="true"
+          data-minty-cat-clearance=""
+          className={`pointer-events-none w-full ${tucked ? TAB_CLEARANCE : CAT_CLEARANCE}`}
+        />,
+        roomHost(),
+      )
+    : null;
+
+  if (tucked) {
+    return (
+      <>
+        {clearance}
+        <button
+          ref={tab}
+          type="button"
+          aria-label="Bring Minty back"
+          title="Bring Minty back"
+          onClick={() => tuck(false)}
+          style={
+            place ? { bottom: `clamp(0px, ${place.bottom}px, calc(100dvh - 3.5rem))` } : undefined
+          }
+          className={`fixed z-[150] flex h-14 w-11 ${place ? "" : "bottom-[max(1rem,env(safe-area-inset-bottom))]"} cursor-pointer items-center overflow-hidden ${left ? "left-0 justify-start rounded-r-2xl border-l-0" : `${rail ? "right-0 xl:right-[280px]" : "right-0"} justify-end rounded-l-2xl border-r-0`} ${FOCUS_RING} ${look.tab}`}
+        >
+          {/* The still cat peeking out from the edge. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- a packaged component cannot use next/image's loader config */}
+          <img
+            src={CAT_STILL}
+            alt=""
+            width={48}
+            height={48}
+            draggable={false}
+            className={`size-12 max-w-none shrink-0 select-none object-contain ${left ? "-translate-x-2" : "translate-x-2"}`}
+          />
+        </button>
+      </>
+    );
+  }
 
   return (
     <>
-      <div className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] z-[150] ${corner}`}>
+      {clearance}
+      <div
+        style={dragAt ? { left: dragAt.x, top: dragAt.y } : place ? spotOf(place) : undefined}
+        className={`fixed z-[150] ${dragAt || place ? "" : `bottom-[max(1rem,env(safe-area-inset-bottom))] ${corner}`}`}
+      >
         {menuOpen ? (
           <div
             ref={menu}
@@ -206,9 +387,9 @@ export function ContactLauncher({
             role="menu"
             aria-label="Minty"
             onKeyDown={onMenuKey}
-            className={`absolute bottom-[108px] right-0 w-[min(18rem,calc(100vw-2rem))] origin-bottom-right animate-minty-rise rounded-2xl p-2 motion-reduce:animate-none sm:bottom-[124px] ${look.popup}`}
+            className={`absolute w-[min(18rem,calc(100vw-2rem))] animate-minty-rise rounded-2xl p-2 motion-reduce:animate-none ${openBelow ? "top-[108px] sm:top-[124px]" : "bottom-[108px] sm:bottom-[124px]"} ${left ? `left-0 ${openBelow ? "origin-top-left" : "origin-bottom-left"}` : `right-0 ${openBelow ? "origin-top-right" : "origin-bottom-right"}`} ${look.popup}`}
           >
-            <p className={`px-3 pb-1 pt-2 text-sm font-semibold ${look.popupGreeting}`}>
+            <p className={`pb-1 pl-3 pr-11 pt-2 text-sm font-semibold ${look.popupGreeting}`}>
               Hi! How can I help?
             </p>
             {lines.map((line) => {
@@ -240,9 +421,21 @@ export function ContactLauncher({
                 </button>
               );
             })}
+            {/* The pop-up's close tucks the cat away (owner, 2026-11-09). Last in the menu, so
+                the first line still takes focus on open; drawn top right, beside the greeting. */}
+            <button
+              type="button"
+              role="menuitem"
+              aria-label="Tuck Minty away"
+              title="Tuck Minty away"
+              onClick={() => tuck(true)}
+              className={`absolute right-1 top-1 flex size-11 cursor-pointer items-center justify-center rounded-xl ${FOCUS_RING} ${look.close}`}
+            >
+              <CloseGlyph />
+            </button>
             <span
               aria-hidden="true"
-              className={`absolute -bottom-1.5 right-[42px] size-3 rotate-45 sm:right-[50px] ${look.popupTail}`}
+              className={`absolute size-3 ${openBelow ? "-top-1.5 rotate-[225deg]" : "-bottom-1.5 rotate-45"} ${left ? "left-[42px] sm:left-[50px]" : "right-[42px] sm:right-[50px]"} ${look.popupTail}`}
             />
           </div>
         ) : null}
@@ -253,14 +446,22 @@ export function ContactLauncher({
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           aria-controls={menuOpen ? menuId : undefined}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerCancel}
           onClick={() => {
+            if (justDragged.current) {
+              justDragged.current = false;
+              return;
+            }
             if (chatOpen) {
               closeChat();
               return;
             }
             setMenuOpen((open) => !open);
           }}
-          className={`group flex size-24 cursor-pointer items-center justify-center rounded-full bg-transparent transition-transform duration-150 active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100 sm:size-28 ${FOCUS_RING} ${look.cat}`}
+          className={`group flex size-24 touch-none items-center justify-center rounded-full bg-transparent transition-transform ${dragAt ? "cursor-grabbing" : "cursor-pointer"} duration-150 active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100 sm:size-28 ${FOCUS_RING} ${look.cat}`}
         >
           {/* The owner's own waving cat (2026-11-05), no button behind it; the shadow follows
               its outline so it stays visible over a busy page. It squishes on a tap and hops
@@ -296,6 +497,7 @@ export function ContactLauncher({
           name={firstName(viewer.name)}
           look={look}
           rail={rail}
+          side={left ? "left" : "right"}
           onClose={closeChat}
           onSend={onSend}
         />

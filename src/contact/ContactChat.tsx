@@ -82,6 +82,7 @@ export function ContactChat({
   suggestions,
   look,
   rail,
+  side = "right",
   onClose,
   onSend,
 }: {
@@ -94,6 +95,8 @@ export function ContactChat({
   look: ContactLookClasses;
   /** The sidebar stands as a 280px rail from 1280px: dock left of it. */
   rail: boolean;
+  /** The side the viewer has put the cat on: the window opens on that side too. */
+  side?: "left" | "right";
   onClose: () => void;
   onSend: () => void;
 }) {
@@ -295,7 +298,7 @@ export function ContactChat({
           onClose();
         }
       }}
-      className={`fixed inset-0 z-[160] flex min-w-0 flex-col sm:inset-auto sm:bottom-[calc(max(1rem,env(safe-area-inset-bottom))+128px)] sm:right-6 sm:h-[min(640px,calc(100dvh-160px))] sm:w-[380px] sm:origin-bottom-right sm:overflow-hidden sm:rounded-2xl animate-minty-rise motion-reduce:animate-none ${rail ? "xl:right-[calc(280px+1.5rem)]" : ""} ${look.window}`}
+      className={`fixed inset-0 z-[160] flex min-w-0 flex-col sm:inset-auto sm:bottom-[calc(max(1rem,env(safe-area-inset-bottom))+128px)] sm:h-[min(640px,calc(100dvh-160px))] sm:w-[380px] sm:overflow-hidden sm:rounded-2xl animate-minty-rise motion-reduce:animate-none ${side === "left" ? "sm:left-6 sm:origin-bottom-left" : `sm:right-6 sm:origin-bottom-right ${rail ? "xl:right-[calc(280px+1.5rem)]" : ""}`} ${look.window}`}
     >
       <header
         className={`flex shrink-0 items-center gap-3 px-4 py-3 pt-[max(12px,env(safe-area-inset-top))] sm:pt-3 ${look.header}`}

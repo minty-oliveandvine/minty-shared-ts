@@ -1,6 +1,7 @@
 /**
  * The "Talk to Minty" cat and chat (v0.14): a pop-up on the cat at the bottom right, and a scripted
- * chat that emails the team through the app's own `send`. An app imports from here, never from
+ * chat that emails the team through the app's own `send`. v0.15: it leaves room for itself at the
+ * end of a page that scrolls, tucks away to a tab on the edge, and can be dragged anywhere. An app imports from here, never from
  * the files.
  */
 

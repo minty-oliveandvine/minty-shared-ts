@@ -4,7 +4,7 @@
 // review where any answer can be edited before Send. Each app's own wiring - its fetch to Flask,
 // its toast - is tested in that app.
 
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 
@@ -24,6 +24,8 @@ import {
   useContactActions,
 } from "../index";
 import { _resetContactActionsForTests } from "../actions";
+import { TUCKED_KEY, _resetTuckedForTests } from "../tucked";
+import { PLACE_KEY, _resetPlaceForTests } from "../place";
 
 let host: FakeHost;
 let send: Mock<ContactLauncherProps["send"]>;
@@ -93,6 +95,9 @@ beforeEach(() => {
   send = vi.fn<ContactLauncherProps["send"]>();
   notify = vi.fn<ContactLauncherProps["notify"]>();
   _resetContactActionsForTests();
+  _resetTuckedForTests();
+  _resetPlaceForTests();
+  localStorage.clear();
 });
 
 describe("the cat", () => {
@@ -161,16 +166,236 @@ describe("the cat", () => {
     show({ actions: [{ id: "create", label: "Create company", icon: "add", onSelect: create }] });
     await userEvent.click(await cat());
     const items = screen.getAllByRole("menuitem");
-    expect(items.map((i) => i.textContent)).toEqual(["Create company", "Talk to Minty"]);
+    // the close (Tuck Minty away) is last, so the first line still takes focus
+    expect(items.map((i) => i.textContent || i.getAttribute("aria-label"))).toEqual([
+      "Create company",
+      "Talk to Minty",
+      "Tuck Minty away",
+    ]);
     expect(items[0]).toHaveFocus();
     await userEvent.keyboard("{ArrowDown}");
     expect(items[1]).toHaveFocus();
+    await userEvent.keyboard("{ArrowDown}");
+    expect(items[2]).toHaveFocus();
     await userEvent.keyboard("{ArrowDown}");
     expect(items[0]).toHaveFocus();
 
     await userEvent.keyboard("{Enter}");
     expect(create).toHaveBeenCalledOnce();
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+});
+
+/** Open the cat's pop-up and press its close, which tucks the cat away. */
+async function tuckAway() {
+  await userEvent.click(await cat());
+  await userEvent.click(screen.getByRole("menuitem", { name: "Tuck Minty away" }));
+}
+
+/** jsdom lays nothing out: make `el` report a content height and a visible height. */
+function stubHeights(el: HTMLElement, scrollHeight: number, clientHeight?: number) {
+  Object.defineProperty(el, "scrollHeight", { configurable: true, get: () => scrollHeight });
+  if (clientHeight !== undefined) {
+    Object.defineProperty(el, "clientHeight", { configurable: true, get: () => clientHeight });
+  }
+}
+
+describe("tucking the cat away", () => {
+  const tab = () => screen.findByRole("button", { name: "Bring Minty back" });
+  const clearance = () => document.body.querySelector("[data-minty-cat-clearance]");
+  const html = document.documentElement;
+
+  beforeEach(() => {
+    // a page taller than the screen, unless a test says otherwise
+    stubHeights(html, window.innerHeight + 600);
+    return () => {
+      delete (html as { scrollHeight?: number }).scrollHeight;
+    };
+  });
+
+  it("leaves room for itself at the end of a page that scrolls, as tall as the cat", async () => {
+    show();
+    await cat();
+    await waitFor(() => expect(clearance()).not.toBeNull());
+    const room = clearance()!;
+    expect(room.parentElement).toBe(document.body);
+    expect(room).toHaveAttribute("aria-hidden", "true");
+    expect(room.className).toContain(
+      "h-[calc(6rem_+_max(1rem,env(safe-area-inset-bottom))_+_0.5rem)]",
+    );
+    expect(room.className).toContain("sm:h-[calc(7rem_+_");
+  });
+
+  it("leaves no room on a page that fits the screen (one that scrolls inside itself)", async () => {
+    stubHeights(html, window.innerHeight);
+    show();
+    await cat();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(clearance()).toBeNull();
+  });
+
+  it("leaves the room inside the app's scroll wrapper, measured by the wrapper when it scrolls", async () => {
+    stubHeights(html, window.innerHeight);
+    const scroller = document.createElement("div");
+    scroller.id = "app-scroll-root";
+    scroller.style.overflowY = "auto";
+    stubHeights(scroller, 2000, 700);
+    document.body.appendChild(scroller);
+    try {
+      show();
+      await cat();
+      await waitFor(() => expect(clearance()).not.toBeNull());
+      const room = clearance()!;
+      expect(room.parentElement).toBe(scroller);
+    } finally {
+      scroller.remove();
+    }
+  });
+
+  it("draws no room for a page that hides the cat", async () => {
+    show({ hidden: true });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(clearance()).toBeNull();
+  });
+
+  it("tucks away to a tab on the edge, focused, with a smaller room - and the tab brings it back", async () => {
+    show();
+    await tuckAway();
+    const edge = await tab();
+    expect(edge).toHaveFocus();
+    expect(screen.queryByRole("button", { name: "Talk to Minty" })).toBeNull();
+    expect(edge.className).toContain("right-0");
+    await waitFor(() => expect(clearance()!.className).toContain("h-[calc(3.5rem_+_"));
+    expect(localStorage.getItem(TUCKED_KEY)).toBe("1");
+
+    await userEvent.click(edge);
+    expect(await cat()).toHaveFocus();
+    expect(screen.queryByRole("button", { name: "Bring Minty back" })).toBeNull();
+    expect(localStorage.getItem(TUCKED_KEY)).toBeNull();
+  });
+
+  it("stays tucked on the next page of this browser", async () => {
+    localStorage.setItem(TUCKED_KEY, "1");
+    show();
+    expect(await tab()).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Talk to Minty" })).toBeNull();
+  });
+
+  it("is the pop-up's close, shown with the pop-up only - Escape still just closes the pop-up", async () => {
+    show();
+    const button = await cat();
+    expect(screen.queryByRole("menuitem", { name: "Tuck Minty away" })).toBeNull();
+    await userEvent.click(button);
+    const close = within(screen.getByRole("menu")).getByRole("menuitem", {
+      name: "Tuck Minty away",
+    });
+    expect(close).toHaveAttribute("title", "Tuck Minty away");
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(button).toHaveFocus();
+    expect(screen.queryByRole("button", { name: "Bring Minty back" })).toBeNull();
+  });
+
+  it("still tucks when this browser refuses to save it, for this page only", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const save = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("QuotaExceededError");
+    });
+    show();
+    await tuckAway();
+    expect(await tab()).toBeInTheDocument();
+    expect(error).toHaveBeenCalledWith(
+      "[contact] the cat's tucked state was not saved",
+      expect.any(Error),
+    );
+    save.mockRestore();
+    error.mockRestore();
+  });
+
+  it("puts the tab beside the 280px rail when the sidebar has one", async () => {
+    localStorage.setItem(TUCKED_KEY, "1");
+    render(
+      <SidebarProvider look="v2" rail>
+        <ContactLauncher send={send} notify={notify} />
+      </SidebarProvider>,
+    );
+    expect((await tab()).className).toContain("xl:right-[280px]");
+  });
+});
+
+describe("moving the cat", () => {
+  /** The fixed box that holds the cat (its pop-up opens out of it). */
+  const box = async () => (await cat()).parentElement!;
+
+  /** jsdom lays nothing out: the 112px cat on its resting spot at the bottom right. */
+  async function restingBox() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const top = h - 16 - 112;
+    (await box()).getBoundingClientRect = () =>
+      ({ left: w - 136, top, width: 112, height: 112, right: w - 24, bottom: h - 16 }) as DOMRect;
+    return { w, h, top };
+  }
+
+  it("is dragged anywhere and stays exactly where it is let go, remembered; the click after is not a tap", async () => {
+    show();
+    const button = await cat();
+    const { w, top } = await restingBox();
+    // grabbed by its middle, let go with its middle at (300, 200)
+    fireEvent.pointerDown(button, { button: 0, pointerId: 1, clientX: w - 80, clientY: top + 56 });
+    fireEvent.pointerMove(button, { pointerId: 1, clientX: w - 90, clientY: top + 40 });
+    expect((await box()).style.left).not.toBe("");
+    fireEvent.pointerMove(button, { pointerId: 1, clientX: 300, clientY: 200 });
+    fireEvent.pointerUp(button, { pointerId: 1, clientX: 300, clientY: 200 });
+    fireEvent.click(button);
+
+    expect(screen.queryByRole("menu")).toBeNull();
+    // its box's top-left at (244, 144): no snapping to a side or to the bottom
+    const place = { right: w - (244 + 112), bottom: window.innerHeight - (144 + 112) };
+    expect(JSON.parse(localStorage.getItem(PLACE_KEY)!)).toEqual(place);
+    const style = (await box()).style;
+    expect(style.right).toContain(`${place.right}px`);
+    expect(style.bottom).toContain(`${place.bottom}px`);
+    // kept on screen however small the window gets
+    expect(style.right).toContain("clamp(0px");
+    // off its resting spot it leaves no room at the end of the page
+    expect(document.body.querySelector("[data-minty-cat-clearance]")).toBeNull();
+  });
+
+  it("still opens its pop-up on a tap that barely moves", async () => {
+    show();
+    const button = await cat();
+    fireEvent.pointerDown(button, { button: 0, pointerId: 1, clientX: 900, clientY: 700 });
+    fireEvent.pointerMove(button, { pointerId: 1, clientX: 902, clientY: 701 });
+    fireEvent.pointerUp(button, { pointerId: 1, clientX: 902, clientY: 701 });
+    await userEvent.click(button);
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+    expect(localStorage.getItem(PLACE_KEY)).toBeNull();
+  });
+
+  it("offers no Move line - it is moved by dragging", async () => {
+    show();
+    await userEvent.click(await cat());
+    expect(screen.queryByRole("menuitem", { name: /Move Minty/ })).toBeNull();
+  });
+
+  it("put on the left half, opens its pop-up and chat on the left and tucks to the left edge", async () => {
+    localStorage.setItem(
+      PLACE_KEY,
+      JSON.stringify({ right: window.innerWidth - 150, bottom: 200 }),
+    );
+    show();
+    await userEvent.click(await cat());
+    expect(screen.getByRole("menu").className).toContain("left-0");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Talk to Minty" }));
+    expect(chat().className).toContain("sm:left-6");
+    await userEvent.keyboard("{Escape}");
+
+    await tuckAway();
+    const edge = await screen.findByRole("button", { name: "Bring Minty back" });
+    expect(edge.className).toContain("left-0");
+    expect(edge.className).toContain("rounded-r-2xl");
+    expect(edge.style.bottom).toContain("200px");
   });
 });
 
@@ -195,10 +420,9 @@ describe("a page's own lines", () => {
     const create = screen.getByRole("menuitem", { name: "Create company" });
     expect(create.tagName).toBe("A");
     expect(create).toHaveAttribute("href", "/entity/create");
-    expect(screen.getAllByRole("menuitem").map((i) => i.textContent)).toEqual([
-      "Create company",
-      "Talk to Minty",
-    ]);
+    expect(
+      screen.getAllByRole("menuitem").map((i) => i.textContent || i.getAttribute("aria-label")),
+    ).toEqual(["Create company", "Talk to Minty", "Tuck Minty away"]);
 
     view.rerender(
       <SidebarProvider look="classic">
@@ -554,6 +778,9 @@ describe.each<Look>(["classic", "v2"])("the %s look", (look) => {
     expect(button.className).toContain(CONTACT_LOOK[look].cat);
     await userEvent.click(button);
     expect(screen.getByRole("menu").className).toContain(CONTACT_LOOK[look].popup);
+    expect(screen.getByRole("menuitem", { name: "Tuck Minty away" }).className).toContain(
+      CONTACT_LOOK[look].close,
+    );
     await userEvent.click(screen.getByRole("menuitem", { name: "Talk to Minty" }));
     expect(chat().className).toContain(CONTACT_LOOK[look].window);
   });

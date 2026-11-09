@@ -244,6 +244,24 @@ href }])` (a link) or `onSelect` (a callback); pass a stable array.
   Nothing moves under reduced motion. `CONTACT_ASSETS` (`/contact/minty-cat.webp` and
   `/contact/minty-cat-animated.webp`) is a `public/` contract like `SIDEBAR_ASSETS`.
 
+v0.15 (owner, 2026-11-09): the cat stood on a page's last controls - minty-payment-request-web's
+pager, Page 3 and Next, could not be clicked from 1280px.
+
+- **Room for itself:** on a page that scrolls (content taller than the screen), the cat on its
+  resting spot adds an empty block its own height (plus the gap under it) at the end, so whatever
+  ends in the bottom-right corner scrolls up clear of it. A page that fits the screen - one that
+  scrolls inside itself, like minty-web's company list - gets none. The block goes in the app's
+  scroller: `#app-scroll-root` when the app scrolls that wrapper (`scrollLock`'s rule), else `body`.
+- **Tuck away:** the pop-up's close (x, "Tuck Minty away", a 44px target; Escape still only
+  closes the pop-up) leaves only a 44 x 56px tab on the screen's edge ("Bring Minty back"), beside
+  the rail when there is one. Remembered per browser and per app in `localStorage`
+  (`minty-cat-tucked`); if storage refuses, it still tucks for that page. Focus follows to the tab
+  and back to the cat.
+- **Dragged anywhere:** the cat can be dragged and stays exactly where it is let go - no snapping
+  (`minty-cat-place`, its distance from the right and bottom edges, kept on screen when the window
+  shrinks). A press that moves less than 6px is still a tap. On the left half its pop-up, chat
+  and tab open on the left. Moved off its resting spot, it leaves no room at the page's end.
+
 ### My Profile (`@minty/shared/profile`, v0.6)
 
 The sidebar's second view: My Profile opens over the page, never as a page of its own (the
