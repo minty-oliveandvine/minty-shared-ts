@@ -13,12 +13,11 @@ import { _resetHandoffCodesForTests, HANDOFF_CODE_REFUSED, redeemHandoffCodeOnce
 import { safeNextPath } from "./safeNext";
 
 /**
- * What the landing reads off its address: the one-time `code` (gap 4), the legacy `token` (read
- * until accounts-api stops sending it), `entity_id`, `entity_name` and a safe `next`.
+ * What the landing reads off its address: the one-time `code` (gap 4), `entity_id`, `entity_name`
+ * and a safe `next`. A `token` in the address is never read (v0.17).
  */
 export type LandingParams = {
   code: string;
-  token: string;
   entityId: string;
   entityName: string;
   next: string;
@@ -31,7 +30,6 @@ export function readLanding(
 ): LandingParams {
   return {
     code: searchParams.get("code") ?? "",
-    token: searchParams.get("token") ?? "",
     entityId: searchParams.get("entity_id") ?? "",
     entityName: searchParams.get("entity_name") ?? "",
     next: safeNextPath(searchParams.get("next"), home),
@@ -48,8 +46,8 @@ export type LandingOptions = {
   /** Where a landing with no safe `next` goes. */
   home: string;
   /**
-   * Reached with neither code nor token (a bookmark, a stale tab; empty is none): the app's way
-   * back. Also what the page's "Continue" runs after a refused code.
+   * Reached with no code (a bookmark, a stale tab, an old `?token=` link; empty is none): the app's
+   * way back. Also what the page's "Continue" runs after a refused code.
    */
   onNoToken: (landing: LandingParams) => void;
   /** accounts-api's base URL, where the code is swapped (`redeemHandoffCode`). */
@@ -70,10 +68,10 @@ export function _resetLandingForTests(): void {
  * swapped for the token (`redeemHandoffCode`), which is stored before `router.replace` goes to the
  * safe `next`; a code that cannot be swapped leaves `refused` set to the sentence to show, and the
  * page offers its "Continue" (`onNoToken`) - never an automatic redirect, which could loop. With
- * neither code nor token, the app's `onNoToken` straight away (minty-web and Petty Cash go back
- * through their re-handoff, the payments app to accounts-api's `/entity`). A legacy `?token=` is
- * still stored as it is until accounts-api stops sending one. Pass module-level functions: the
- * effect runs again when one changes.
+ * no code, the app's `onNoToken` straight away (minty-web and Petty Cash go back through their
+ * re-handoff, the payments app to accounts-api's `/entity`); a `?token=` in the address is never
+ * stored (v0.17 - an address is not a way to hand anyone a session). Pass module-level functions:
+ * the effect runs again when one changes.
  */
 export function useLandingHandoff({
   searchParams,
@@ -103,12 +101,7 @@ export function useLandingHandoff({
         live = false;
       };
     }
-    if (!landing.token) {
-      onNoToken(landing);
-      return;
-    }
-    setAuth(landing.token, landing.entityId, landing.entityName);
-    router.replace(landing.next);
+    onNoToken(landing);
   }, [searchParams, router, setAuth, home, onNoToken, accountsApiUrl]);
   return { refused };
 }

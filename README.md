@@ -355,7 +355,7 @@ the file pulls the host, and with it `next/navigation`, into memory before any t
 `vi.mock` is registered - binding the real modules for good. Import it inside the hook instead.
 Both consumers do.
 
-## No tokens in addresses (`./handoff`, `./landing`, v0.16)
+## No tokens in addresses (`./handoff`, `./landing`, v0.16-v0.17)
 
 Gap 4 of the sign-in hardening (owner, 2026-11-09). accounts-api no longer hands an app its token
 in the address: it sends `/landing?code=<one-time code>&next=…&entity_id=…&entity_name=…`, and the
@@ -365,8 +365,8 @@ good once, for 2 minutes, and only from the app it was handed to. The hook retur
 `{ refused }`: the sentence to show when a code cannot be swapped (`HANDOFF_CODE_REFUSED` unless
 accounts-api sent its own); the page offers a "Continue" that runs its `onNoToken`, never an
 automatic redirect (which could loop). One swap per code per page, so Strict Mode's second effect
-run does not spend it twice. A legacy `?token=` is still stored until accounts-api stops sending
-it.
+run does not spend it twice. Since v0.17 a `?token=` in the address is never stored: it goes the
+app's way back like an address with nothing.
 
 The way back, `mintyEntryUrl`, carries **no token**: `/entity/<id>/enter?next=` works on the
 person's accounts-api session, or signs them in and returns (the old `token` argument is gone).

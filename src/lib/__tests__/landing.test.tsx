@@ -1,8 +1,8 @@
 // The /landing page's logic (lib/landing.ts), ported from minty-web's and minty-petty-cash-web's
-// app/__tests__/landing.test.tsx and minty-payment-request-web's app/landing/__tests__/page.test.tsx:
-// a token is stored and the page moves on to a SAFE next; no token (or an empty one) is the app's
-// own way back, and nothing is stored. Gap 4 (2026-11-09): a one-time code is swapped for the
-// token first; a refused code leaves the sentence to show and never redirects by itself.
+// app/__tests__/landing.test.tsx and minty-payment-request-web's app/landing/__tests__/page.test.tsx.
+// Gap 4 (2026-11-09): a one-time code is swapped for the token, which is stored before the page
+// moves on to a SAFE next; a refused code leaves the sentence to show and never redirects by
+// itself; no code - an old ?token= link included - is the app's own way back, storing nothing.
 
 import { render, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
@@ -36,9 +36,15 @@ function Landing({ query, home = "/entities" }: { query: string; home?: string }
   return refused ? <p role="alert">{refused}</p> : null;
 }
 
+/** Every swap answers the same - a fresh Response each time (a body can be read only once). */
 const swapAnswers = (status: number, body: unknown) =>
-  fetchMock.mockResolvedValue(
-    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } }),
+  fetchMock.mockImplementation(() =>
+    Promise.resolve(
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      }),
+    ),
   );
 
 beforeEach(() => {
@@ -63,14 +69,12 @@ describe("readLanding", () => {
       ),
     ).toEqual({
       code: "",
-      token: "t",
       entityId: "e",
       entityName: "Olive & Vine",
       next: "/a?b=1#c",
     });
     expect(readLanding(new URLSearchParams(""), "/home")).toEqual({
       code: "",
-      token: "",
       entityId: "",
       entityName: "",
       next: "/home",
@@ -86,26 +90,23 @@ describe("readLanding", () => {
 });
 
 describe("useLandingHandoff", () => {
-  it("stores the token with its company and replaces the page with next", () => {
-    render(
-      <Landing query="token=t1&entity_id=e1&entity_name=Olive%20%26%20Vine&next=%2Fsubscription%3Fa%3D1" />,
-    );
-    expect(setAuth).toHaveBeenCalledWith("t1", "e1", "Olive & Vine");
-    expect(replace).toHaveBeenCalledWith("/subscription?a=1");
-    expect(onNoToken).not.toHaveBeenCalled();
-  });
-
-  it("an unsafe or missing next goes home; a company not named is stored as empty strings", () => {
-    render(<Landing query="token=t1&next=https%3A%2F%2Fevil.com" home="/" />);
-    expect(replace).toHaveBeenLastCalledWith("/");
-    expect(setAuth).toHaveBeenLastCalledWith("t1", "", "");
+  it("never stores a token from the address: an old ?token= link goes the app's way back", () => {
+    render(<Landing query="token=t1&entity_id=e1&entity_name=Co&next=%2Fsubscription" />);
+    expect(setAuth).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+    expect(onNoToken).toHaveBeenCalledWith({
+      code: "",
+      entityId: "e1",
+      entityName: "Co",
+      next: "/subscription",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("no token: the app's way back with the safe next and the company, storing nothing", () => {
     render(<Landing query="entity_id=e1&entity_name=Co&next=%2F%2Fevil.com" />);
     expect(onNoToken).toHaveBeenCalledWith({
       code: "",
-      token: "",
       entityId: "e1",
       entityName: "Co",
       next: "/entities",
@@ -114,17 +115,20 @@ describe("useLandingHandoff", () => {
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("an empty token counts as none", () => {
-    render(<Landing query="token=&next=%2Fprofile" />);
+  it("an empty code counts as none", () => {
+    render(<Landing query="code=&next=%2Fprofile" />);
     expect(onNoToken).toHaveBeenCalledTimes(1);
     expect(replace).not.toHaveBeenCalled();
   });
 
-  it("swaps a one-time code for the token, then stores it and moves on (gap 4)", async () => {
+  it("swaps a one-time code for the token, then stores it and moves on, unsafe next home (gap 4)", async () => {
     swapAnswers(200, { token: "swapped.jwt" });
     render(<Landing query="code=c0de&entity_id=e1&entity_name=Co&next=%2Fsubscription" />);
     await waitFor(() => expect(setAuth).toHaveBeenCalledWith("swapped.jwt", "e1", "Co"));
     expect(replace).toHaveBeenCalledWith("/subscription");
+    _resetLandingForTests();
+    render(<Landing query="code=c2&next=https%3A%2F%2Fevil.com" home="/" />);
+    await waitFor(() => expect(replace).toHaveBeenLastCalledWith("/"));
     expect(fetchMock.mock.calls[0][0]).toBe(`${ACCOUNTS}/api/handoff/redeem`);
     expect(onNoToken).not.toHaveBeenCalled();
   });
