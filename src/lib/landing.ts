@@ -7,12 +7,22 @@
  * server component or the proxy importing the hand-off URLs must not pull React's client hooks in.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
+import { _resetHandoffCodesForTests, HANDOFF_CODE_REFUSED, redeemHandoffCodeOnce } from "./handoff";
 import { safeNextPath } from "./safeNext";
 
-/** What the landing reads off its address: `token`, `entity_id`, `entity_name` and a safe `next`. */
-export type LandingParams = { token: string; entityId: string; entityName: string; next: string };
+/**
+ * What the landing reads off its address: the one-time `code` (gap 4), the legacy `token` (read
+ * until accounts-api stops sending it), `entity_id`, `entity_name` and a safe `next`.
+ */
+export type LandingParams = {
+  code: string;
+  token: string;
+  entityId: string;
+  entityName: string;
+  next: string;
+};
 
 /** The landing's address, read: absent values are "", an unsafe or absent `next` is `home`. */
 export function readLanding(
@@ -20,6 +30,7 @@ export function readLanding(
   home: string,
 ): LandingParams {
   return {
+    code: searchParams.get("code") ?? "",
     token: searchParams.get("token") ?? "",
     entityId: searchParams.get("entity_id") ?? "",
     entityName: searchParams.get("entity_name") ?? "",
@@ -36,16 +47,33 @@ export type LandingOptions = {
   setAuth: (token: string, entityId: string, entityName: string) => void;
   /** Where a landing with no safe `next` goes. */
   home: string;
-  /** Reached with no token (a bookmark, a stale tab; an empty token is none): the app's way back. */
+  /**
+   * Reached with neither code nor token (a bookmark, a stale tab; empty is none): the app's way
+   * back. Also what the page's "Continue" runs after a refused code.
+   */
   onNoToken: (landing: LandingParams) => void;
+  /** accounts-api's base URL, where the code is swapped (`redeemHandoffCode`). */
+  accountsApiUrl: () => string;
 };
 
+/** Where the landing is: still on its way, or a code that could not be swapped (`refused`). */
+export type LandingState = { refused: string | null };
+
+/** Test seam: forget the swaps made so far. */
+export function _resetLandingForTests(): void {
+  _resetHandoffCodesForTests();
+}
+
 /**
- * The `/landing` page's logic, the same in every app: Flask's hand-off arrives as
- * `/landing?token=<jwt>&next=<path>&entity_id=…&entity_name=…`. With a token, store it and
- * `router.replace` the safe `next`; without one, the app's `onNoToken` (minty-web and Petty Cash
- * go back through their re-handoff, the payments app to Flask's `/entity`). Pass module-level
- * functions: the effect runs again when one changes.
+ * The `/landing` page's logic, the same in every app: accounts-api's hand-off arrives as
+ * `/landing?code=<one-time code>&next=<path>&entity_id=…&entity_name=…` (gap 4). The code is
+ * swapped for the token (`redeemHandoffCode`), which is stored before `router.replace` goes to the
+ * safe `next`; a code that cannot be swapped leaves `refused` set to the sentence to show, and the
+ * page offers its "Continue" (`onNoToken`) - never an automatic redirect, which could loop. With
+ * neither code nor token, the app's `onNoToken` straight away (minty-web and Petty Cash go back
+ * through their re-handoff, the payments app to accounts-api's `/entity`). A legacy `?token=` is
+ * still stored as it is until accounts-api stops sending one. Pass module-level functions: the
+ * effect runs again when one changes.
  */
 export function useLandingHandoff({
   searchParams,
@@ -53,14 +81,34 @@ export function useLandingHandoff({
   setAuth,
   home,
   onNoToken,
-}: LandingOptions): void {
+  accountsApiUrl,
+}: LandingOptions): LandingState {
+  const [refused, setRefused] = useState<string | null>(null);
   useEffect(() => {
     const landing = readLanding(searchParams, home);
+    if (landing.code) {
+      let live = true;
+      redeemHandoffCodeOnce(accountsApiUrl(), landing.code).then(
+        (token) => {
+          if (!live) return;
+          setAuth(token, landing.entityId, landing.entityName);
+          router.replace(landing.next);
+        },
+        (err: unknown) => {
+          if (!live) return;
+          setRefused(err instanceof Error && err.message ? err.message : HANDOFF_CODE_REFUSED);
+        },
+      );
+      return () => {
+        live = false;
+      };
+    }
     if (!landing.token) {
       onNoToken(landing);
       return;
     }
     setAuth(landing.token, landing.entityId, landing.entityName);
     router.replace(landing.next);
-  }, [searchParams, router, setAuth, home, onNoToken]);
+  }, [searchParams, router, setAuth, home, onNoToken, accountsApiUrl]);
+  return { refused };
 }

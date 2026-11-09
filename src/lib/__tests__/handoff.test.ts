@@ -10,9 +10,11 @@ import { addressCompanyRef } from "../companyRef";
 import {
   createHandoff,
   flaskHandoffUrl,
+  HANDOFF_CODE_REFUSED,
   hubHandoffUrl,
   logoutUrl,
   mintyEntryUrl,
+  redeemHandoffCode,
 } from "../handoff";
 
 const FLASK = "http://flask.test";
@@ -61,60 +63,90 @@ describe("logoutUrl", () => {
 });
 
 describe("mintyEntryUrl", () => {
-  const TOKEN = "h.eyJ1c2VyX2lkIjoidTEifQ.s";
-
-  it("is /entity/<id>/enter with token, next, return_origin in that order", () => {
-    expect(mintyEntryUrl({ mintyBase: FLASK, entityId: ENTITY, token: TOKEN })).toBe(
-      `${FLASK}/entity/${ENTITY}/enter?token=${TOKEN}&return_origin=${ORIGIN}`,
+  it("is /entity/<id>/enter with next, then return_origin - and never a token (gap 4)", () => {
+    expect(mintyEntryUrl({ mintyBase: FLASK, entityId: ENTITY })).toBe(
+      `${FLASK}/entity/${ENTITY}/enter?return_origin=${ORIGIN}`,
     );
-    expect(
-      mintyEntryUrl({
-        mintyBase: FLASK,
-        entityId: ENTITY,
-        token: TOKEN,
-        next: "/entity/e1/petty-cash/reports",
-      }),
-    ).toBe(
-      `${FLASK}/entity/${ENTITY}/enter?token=${TOKEN}&next=%2Fentity%2Fe1%2Fpetty-cash%2Freports&return_origin=${ORIGIN}`,
-    );
-  });
-
-  it("encodes the id, the token and the path; the query is re-serialised (a space is '+')", () => {
     const built = mintyEntryUrl({
       mintyBase: FLASK,
-      entityId: "e 2/3",
-      token: "a+b/c=",
-      next: "/a b",
+      entityId: ENTITY,
+      next: "/entity/e1/petty-cash/reports",
     })!;
     expect(built).toBe(
-      `${FLASK}/entity/e%202%2F3/enter?token=a%2Bb%2Fc%3D&next=%2Fa+b&return_origin=${ORIGIN}`,
+      `${FLASK}/entity/${ENTITY}/enter?next=%2Fentity%2Fe1%2Fpetty-cash%2Freports&return_origin=${ORIGIN}`,
     );
+    expect(new URL(built).searchParams.has("token")).toBe(false);
+  });
+
+  it("encodes the id and the path; the query is re-serialised (a space is '+')", () => {
+    const built = mintyEntryUrl({ mintyBase: FLASK, entityId: "e 2/3", next: "/a b" })!;
+    expect(built).toBe(`${FLASK}/entity/e%202%2F3/enter?next=%2Fa+b&return_origin=${ORIGIN}`);
     expect(new URL(built).searchParams.get("next")).toBe("/a b");
   });
 
   it("an empty next is no next", () => {
-    const url = new URL(
-      mintyEntryUrl({ mintyBase: FLASK, entityId: ENTITY, token: TOKEN, next: "" })!,
-    );
+    const url = new URL(mintyEntryUrl({ mintyBase: FLASK, entityId: ENTITY, next: "" })!);
     expect(url.searchParams.has("next")).toBe(false);
   });
 
-  it("is null with nothing to enter with - the app picks its fallback", () => {
-    expect(mintyEntryUrl({ mintyBase: FLASK, entityId: "", token: TOKEN })).toBeNull();
-    expect(mintyEntryUrl({ mintyBase: FLASK, entityId: ENTITY, token: null })).toBeNull();
-    expect(mintyEntryUrl({ mintyBase: FLASK, entityId: undefined, token: undefined })).toBeNull();
+  it("is null with no company - the app picks its fallback", () => {
+    expect(mintyEntryUrl({ mintyBase: FLASK, entityId: "" })).toBeNull();
+    expect(mintyEntryUrl({ mintyBase: FLASK, entityId: undefined })).toBeNull();
   });
 
   it("takes the origin it is given", () => {
     const url = new URL(
-      mintyEntryUrl({
-        mintyBase: FLASK,
-        entityId: ENTITY,
-        token: TOKEN,
-        origin: "https://o.test",
-      })!,
+      mintyEntryUrl({ mintyBase: FLASK, entityId: ENTITY, origin: "https://o.test" })!,
     );
     expect(url.searchParams.get("return_origin")).toBe("https://o.test");
+  });
+});
+
+describe("redeemHandoffCode", () => {
+  const fetchMock = vi.fn<typeof fetch>();
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const answer = (status: number, body: unknown) =>
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+  it("POSTs the code to accounts-api, with no cookie, and gives back the token", async () => {
+    answer(200, { token: "the.jwt" });
+    await expect(redeemHandoffCode(`${FLASK}/`, "c0de")).resolves.toBe("the.jwt");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(`${FLASK}/api/handoff/redeem`);
+    expect(init).toMatchObject({ method: "POST", credentials: "omit", cache: "no-store" });
+    expect(JSON.parse(String(init?.body))).toEqual({ code: "c0de" });
+  });
+
+  it("a refusal rejects with accounts-api's own sentence", async () => {
+    const error = vi.spyOn(console, "warn").mockImplementation(() => {});
+    answer(400, { error: "That link has run out." });
+    await expect(redeemHandoffCode(FLASK, "used")).rejects.toThrow("That link has run out.");
+    error.mockRestore();
+  });
+
+  it("no sentence, no token or no network: the house sentence", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    answer(500, {});
+    await expect(redeemHandoffCode(FLASK, "c")).rejects.toThrow(HANDOFF_CODE_REFUSED);
+    answer(200, {});
+    await expect(redeemHandoffCode(FLASK, "c")).rejects.toThrow(HANDOFF_CODE_REFUSED);
+    fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await expect(redeemHandoffCode(FLASK, "c")).rejects.toThrow(HANDOFF_CODE_REFUSED);
+    expect(warn).toHaveBeenCalled(); // refused
+    expect(error).toHaveBeenCalled(); // offline
+    warn.mockRestore();
+    error.mockRestore();
   });
 });
 

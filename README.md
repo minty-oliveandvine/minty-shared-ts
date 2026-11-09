@@ -28,7 +28,7 @@ per concern; each module's header comment and tests are the specification.
 | `./apiClient`   | `ApiError`, `withQuery`, `readBody`, `errorSentence`, `HOUSE_FALLBACK`, `SESSION_ENDED`, `createBearerClient` (each app's 401 rule is its `onUnauthorized` callback)                                                                                                                                                                                       |
 | `./errorCopy`   | `friendlyError`, `errorCopy`, `readsAsProse`, `resolveApiErrorMessage`, `statusFallback` - machine text never reaches a person                                                                                                                                                                                                                             |
 | `./auth`        | `createCookieAuth({ prefix, maxAge? })`, `decodeJwtPayload`, `secondsUntilExpiry`, `isTokenExpired`, `isTokenExpiringSoon`, `moduleClaims`                                                                                                                                                                                                                 |
-| `./handoff`     | `createHandoff`, `hubHandoffUrl`, `flaskHandoffUrl`, `mintyEntryUrl`, `logoutUrl` (no React)                                                                                                                                                                                                                                                               |
+| `./handoff`     | `createHandoff`, `hubHandoffUrl`, `flaskHandoffUrl`, `mintyEntryUrl`, `logoutUrl`, `redeemHandoffCode` (no React)                                                                                                                                                                                                                                          |
 | `./landing`     | `useLandingHandoff`, `readLanding` ("use client" - the `/landing` page)                                                                                                                                                                                                                                                                                    |
 | `./portal`      | `createProfileApi`, `fetchAllSubscriptions`, `loadViewer`, the Portal types                                                                                                                                                                                                                                                                                |
 | `./amountInput` | `useAmountInput({ value, onValue, kind, decimals })` - spread on a controlled `<input>`: commas as the person types, the caret kept on its digit, places padded on blur; `kind: "count"` for whole numbers (v0.9, owner 2026-10-26)                                                                                                                        |
@@ -354,6 +354,22 @@ registered before anything renders, and it means no page, feature or test had to
 the file pulls the host, and with it `next/navigation`, into memory before any test file's
 `vi.mock` is registered - binding the real modules for good. Import it inside the hook instead.
 Both consumers do.
+
+## No tokens in addresses (`./handoff`, `./landing`, v0.16)
+
+Gap 4 of the sign-in hardening (owner, 2026-11-09). accounts-api no longer hands an app its token
+in the address: it sends `/landing?code=<one-time code>&next=…&entity_id=…&entity_name=…`, and the
+landing swaps the code for the token in the browser - `useLandingHandoff({..., accountsApiUrl})`
+calls `redeemHandoffCode`, a `POST <accounts-api>/api/handoff/redeem` with no cookie. A code is
+good once, for 2 minutes, and only from the app it was handed to. The hook returns
+`{ refused }`: the sentence to show when a code cannot be swapped (`HANDOFF_CODE_REFUSED` unless
+accounts-api sent its own); the page offers a "Continue" that runs its `onNoToken`, never an
+automatic redirect (which could loop). One swap per code per page, so Strict Mode's second effect
+run does not spend it twice. A legacy `?token=` is still stored until accounts-api stops sending
+it.
+
+The way back, `mintyEntryUrl`, carries **no token**: `/entity/<id>/enter?next=` works on the
+person's accounts-api session, or signs them in and returns (the old `token` argument is gone).
 
 ## Preview sets (`@minty/shared/previewSibling`)
 

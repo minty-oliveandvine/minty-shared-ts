@@ -1,4 +1,7 @@
 /**
+ * Gap 4 (2026-11-09): accounts-api hands over a one-time `?code=`, not the token - the landing
+ * swaps it with `redeemHandoffCode` - and the way back (`mintyEntryUrl`) carries no token.
+ *
  * Getting a token, and getting a new one - one implementation for every app (the shared-code
  * refactor, 2026-10-21; it was minty-web's and minty-petty-cash-web's `lib/handoff.ts`, the
  * petty-cash `lib/hub.ts` hubUrl, minty-payment-request-web's `lib/mintyUrls.ts` and sidebar
@@ -67,30 +70,85 @@ export function logoutUrl(flaskBase: string): string {
 }
 
 /**
- * Into Minty for one company with the token the app holds: Flask's `/entity/<id>/enter`
- * (`entity.module_reenter`) validates the token, re-establishes the Flask session and forwards to
- * `next` - so the person lands signed in rather than on a sign-in screen. Query order: token,
- * next, return_origin. An empty `next` is none.
+ * Into Minty for one company: accounts-api's `/entity/<id>/enter` forwards to `next` on the
+ * person's accounts-api session, or signs them in first and then does (gap 4, 2026-11-09: the way
+ * back carries no token - it used to be `?token=`, which put the app's token in an address).
+ * Query order: next, return_origin. An empty `next` is none.
  *
- * Null when there is nothing to enter with (no company or no token): the app picks its own
- * fallback (minty-web its entity list, the payments app Flask's `/entity`).
+ * Null with no company: the app picks its own fallback (minty-web its entity list, the payments
+ * app accounts-api's `/entity`).
  */
 export function mintyEntryUrl({
   mintyBase,
   entityId,
-  token,
   next,
   origin,
 }: {
   mintyBase: string;
   entityId: string | null | undefined;
-  token: string | null | undefined;
   next?: string | null;
   origin?: string;
 }): string | null {
-  if (!entityId || !token) return null;
-  const base = `${trimBase(mintyBase)}/entity/${encodeURIComponent(entityId)}/enter?token=${encodeURIComponent(token)}`;
-  return withReturnOrigin(next ? `${base}&next=${encodeURIComponent(next)}` : base, origin);
+  if (!entityId) return null;
+  const base = `${trimBase(mintyBase)}/entity/${encodeURIComponent(entityId)}/enter`;
+  return withReturnOrigin(next ? `${base}?next=${encodeURIComponent(next)}` : base, origin);
+}
+
+/** The house sentence when a one-time code cannot be swapped (used, run out, forged, offline). */
+export const HANDOFF_CODE_REFUSED =
+  "This sign-in link has already been used or has run out. Open it again from Minty to continue.";
+
+/**
+ * Swap the one-time code accounts-api handed over (`?code=`, gap 4) for this app's token: `POST
+ * <accounts-api>/api/handoff/redeem` from this page's origin - the code is good once, for 2
+ * minutes, and only from the app it was handed to. Rejects with an `Error` whose `message` is the
+ * sentence to show (accounts-api's own, else `HANDOFF_CODE_REFUSED`).
+ */
+export async function redeemHandoffCode(accountsApiUrl: string, code: string): Promise<string> {
+  let response: Response;
+  try {
+    response = await fetch(`${trimBase(accountsApiUrl)}/api/handoff/redeem`, {
+      method: "POST",
+      credentials: "omit",
+      cache: "no-store",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+  } catch (err) {
+    console.error("[handoff] the code could not be swapped (network)", err);
+    throw new Error(HANDOFF_CODE_REFUSED);
+  }
+  const body = (await response.json().catch(() => null)) as {
+    token?: unknown;
+    error?: unknown;
+  } | null;
+  if (response.ok && typeof body?.token === "string" && body.token) return body.token;
+  // a used or lapsed link is ordinary (a reload, an old tab): said, not an app error
+  console.warn(`[handoff] the code was refused (${response.status})`);
+  throw new Error(
+    typeof body?.error === "string" && body.error ? body.error : HANDOFF_CODE_REFUSED,
+  );
+}
+
+/**
+ * One swap per code per page: React runs an effect twice in development (Strict Mode), and the
+ * second POST would find the code spent. Every caller with the same code shares the first answer.
+ */
+const swaps = new Map<string, Promise<string>>();
+
+/** `redeemHandoffCode`, once per code for this page (the landing hook and onboarding's launch). */
+export function redeemHandoffCodeOnce(accountsApiUrl: string, code: string): Promise<string> {
+  let swap = swaps.get(code);
+  if (!swap) {
+    swap = redeemHandoffCode(accountsApiUrl, code);
+    swaps.set(code, swap);
+  }
+  return swap;
+}
+
+/** Test seam: forget the swaps made so far. */
+export function _resetHandoffCodesForTests(): void {
+  swaps.clear();
 }
 
 type Navigate = (url: string) => void;

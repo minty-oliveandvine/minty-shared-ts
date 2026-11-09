@@ -119,7 +119,7 @@ export type PortalEntity = {
   /** False on exactly those rows. Absent on an older answer, which means "it has one". */
   has_subscriber?: boolean;
   modules: PortalModule[];
-  /** A Minty PATH. Hand the token back through Flask's /entity/<id>/enter to land on it signed in. */
+  /** A Minty PATH, reached through accounts-api's /entity/<id>/enter (on its session, no token). */
   settings_path: string;
   /** ISO; when the company was created (the Manage Subscriptions list is newest first). */
   created_at?: string | null;
