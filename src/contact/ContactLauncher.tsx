@@ -42,7 +42,7 @@ import { requireSidebarHost } from "../host";
 import { useViewer } from "../lib/viewer";
 import { useLook, useSidebar } from "../sidebar/Sidebar";
 import { useRegisteredContactActions, type ContactAction } from "./actions";
-import { CAT_ANIMATED, CAT_STILL } from "./assets";
+import { CAT_ANIMATED, CAT_STILL, CAT_TAB, CAT_TAB_RIGHT } from "./assets";
 import { ContactChat } from "./ContactChat";
 import { AddGlyph, ChatGlyph, CloseGlyph } from "./glyphs";
 import { CONTACT_LOOK } from "./looks";
@@ -360,17 +360,19 @@ export function ContactLauncher({
           style={
             place ? { bottom: `clamp(0px, ${place.bottom}px, calc(100dvh - 3.5rem))` } : undefined
           }
-          className={`fixed z-[150] flex h-14 w-11 ${place ? "" : "bottom-[max(1rem,env(safe-area-inset-bottom))]"} cursor-pointer items-center overflow-hidden ${left ? "left-0 justify-start rounded-r-2xl border-l-0" : `${rail ? "right-0 xl:right-[280px]" : "right-0"} justify-end rounded-l-2xl border-r-0`} ${FOCUS_RING} ${look.tab}`}
+          className={`fixed z-[150] flex h-14 w-11 ${place ? "" : "bottom-[max(1rem,env(safe-area-inset-bottom))]"} cursor-pointer items-center overflow-hidden ${left ? "left-0 justify-center rounded-r-2xl border-l-0" : `${rail ? "right-0 xl:right-[280px]" : "right-0"} justify-center rounded-l-2xl border-r-0`} ${FOCUS_RING} ${look.tab}`}
         >
-          {/* The still cat peeking out from the edge. */}
+          {/* The thinking cat (owner, 2026-11-11), drawn whole inside the tab: shifted past the
+              screen's edge, the right-hand tab cut off its "?". Mirrored on the right edge (the
+              "?" kept upright), so the "?" faces the page on either side. */}
           {/* eslint-disable-next-line @next/next/no-img-element -- a packaged component cannot use next/image's loader config */}
           <img
-            src={CAT_STILL}
+            src={left ? CAT_TAB : CAT_TAB_RIGHT}
             alt=""
-            width={48}
-            height={48}
+            width={40}
+            height={40}
             draggable={false}
-            className={`size-12 max-w-none shrink-0 select-none object-contain ${left ? "-translate-x-2" : "translate-x-2"}`}
+            className="size-10 shrink-0 select-none object-contain"
           />
         </button>
       </>

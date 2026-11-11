@@ -241,8 +241,9 @@ href }])` (a link) or `onSelect` (a callback); pass a stable array.
   are inline SVG, because the apps load different Material Symbols faces, or none.
 - The cat is the owner's own waving clip (an animated WebP, the still frame first and under
   reduced motion); it squishes on a tap and hops when a message is sent; the pop-up and window rise out of it, lines pop in, rows lift and press in.
-  Nothing moves under reduced motion. `CONTACT_ASSETS` (`/contact/minty-cat.webp` and
-  `/contact/minty-cat-animated.webp`) is a `public/` contract like `SIDEBAR_ASSETS`.
+  Nothing moves under reduced motion. `CONTACT_ASSETS` (`/contact/minty-cat.webp`,
+  `/contact/minty-cat-animated.webp`, `/contact/minty-support.webp` and, since v0.18,
+  `/contact/minty-tab.webp` and `/contact/minty-tab-right.webp`) is a `public/` contract like `SIDEBAR_ASSETS`.
 
 v0.15 (owner, 2026-11-09): the cat stood on a page's last controls - minty-payment-request-web's
 pager, Page 3 and Next, could not be clicked from 1280px.
@@ -258,7 +259,10 @@ pager, Page 3 and Next, could not be clicked from 1280px.
   (`minty-cat-tucked`: "1" tucked, "0" brought out); if storage refuses, it still tucks for that
   page. **Tucked is the default (v0.18, owner 2026-11-11):** a browser that has never brought the
   cat out, or cannot read storage, shows the tab. Tapping the tab brings the cat back with its
-  pop-up open. Focus follows to the tab, and back to the pop-up's first line.
+  pop-up open. Focus follows to the tab, and back to the pop-up's first line. The tab peeks with its own picture, the
+  thinking cat (`CAT_TAB`, `/contact/minty-tab.webp`, owner 2026-11-11), not the cat's still,
+  drawn whole at 40px; on the right edge it is mirrored with the "?" kept upright (`CAT_TAB_RIGHT`,
+  `/contact/minty-tab-right.webp`), so the "?" always faces the page.
 - **Dragged anywhere:** the cat can be dragged and stays exactly where it is let go - no snapping
   (`minty-cat-place`, its distance from the right and bottom edges, kept on screen when the window
   shrinks). A press that moves less than 6px is still a tap. On the left half its pop-up, chat

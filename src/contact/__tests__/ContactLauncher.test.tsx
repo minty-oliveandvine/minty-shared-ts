@@ -265,6 +265,10 @@ describe("tucking the cat away", () => {
     await tuckAway();
     const edge = await tab();
     expect(edge).toHaveFocus();
+    // the thinking cat (owner, 2026-11-11), mirrored on the right edge so its "?" faces the page
+    expect(edge.querySelector("img")).toHaveAttribute("src", "/contact/minty-tab-right.webp");
+    // drawn whole inside the tab, never pushed past the screen's edge: its "?" sits at the right
+    expect(edge.querySelector("img")!.getAttribute("class")).not.toMatch(/translate-x/);
     expect(screen.queryByRole("button", { name: "Talk to Minty" })).toBeNull();
     expect(edge.className).toContain("right-0");
     await waitFor(() => expect(clearance()!.className).toContain("h-[calc(3.5rem_+_"));
@@ -422,6 +426,8 @@ describe("moving the cat", () => {
     const edge = await screen.findByRole("button", { name: "Bring Minty back" });
     expect(edge.className).toContain("left-0");
     expect(edge.className).toContain("rounded-r-2xl");
+    // on the left edge the picture as drawn: its "?" already faces the page
+    expect(edge.querySelector("img")).toHaveAttribute("src", "/contact/minty-tab.webp");
     expect(edge.style.bottom).toContain("200px");
   });
 });
