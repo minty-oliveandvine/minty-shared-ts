@@ -255,8 +255,10 @@ pager, Page 3 and Next, could not be clicked from 1280px.
 - **Tuck away:** the pop-up's close (x, "Tuck Minty away", a 44px target; Escape still only
   closes the pop-up) leaves only a 44 x 56px tab on the screen's edge ("Bring Minty back"), beside
   the rail when there is one. Remembered per browser and per app in `localStorage`
-  (`minty-cat-tucked`); if storage refuses, it still tucks for that page. Focus follows to the tab
-  and back to the cat.
+  (`minty-cat-tucked`: "1" tucked, "0" brought out); if storage refuses, it still tucks for that
+  page. **Tucked is the default (v0.18, owner 2026-11-11):** a browser that has never brought the
+  cat out, or cannot read storage, shows the tab. Tapping the tab brings the cat back with its
+  pop-up open. Focus follows to the tab, and back to the pop-up's first line.
 - **Dragged anywhere:** the cat can be dragged and stays exactly where it is let go - no snapping
   (`minty-cat-place`, its distance from the right and bottom edges, kept on screen when the window
   shrinks). A press that moves less than 6px is still a tap. On the left half its pop-up, chat

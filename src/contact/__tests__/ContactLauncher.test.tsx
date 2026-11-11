@@ -98,6 +98,8 @@ beforeEach(() => {
   _resetTuckedForTests();
   _resetPlaceForTests();
   localStorage.clear();
+  // the cat starts tucked (owner, 2026-11-11); these tests start from one brought out
+  localStorage.setItem(TUCKED_KEY, "0");
 });
 
 describe("the cat", () => {
@@ -268,10 +270,35 @@ describe("tucking the cat away", () => {
     await waitFor(() => expect(clearance()!.className).toContain("h-[calc(3.5rem_+_"));
     expect(localStorage.getItem(TUCKED_KEY)).toBe("1");
 
+    // bringing it back opens its pop-up too (owner, 2026-11-11), the first line focused
     await userEvent.click(edge);
-    expect(await cat()).toHaveFocus();
+    await cat();
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getByRole("menuitem", { name: "Talk to Minty" })).toHaveFocus();
     expect(screen.queryByRole("button", { name: "Bring Minty back" })).toBeNull();
-    expect(localStorage.getItem(TUCKED_KEY)).toBeNull();
+    expect(localStorage.getItem(TUCKED_KEY)).toBe("0");
+  });
+
+  it("starts tucked in a browser that has never brought it out (owner, 2026-11-11)", async () => {
+    localStorage.clear();
+    show();
+    expect(await tab()).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Talk to Minty" })).toBeNull();
+    await userEvent.click(await tab());
+    expect(await screen.findByRole("menu")).toBeInTheDocument();
+    expect(localStorage.getItem(TUCKED_KEY)).toBe("0");
+  });
+
+  it("starts tucked when this browser cannot read storage", async () => {
+    const read = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("SecurityError");
+    });
+    try {
+      show();
+      expect(await tab()).toBeInTheDocument();
+    } finally {
+      read.mockRestore();
+    }
   });
 
   it("stays tucked on the next page of this browser", async () => {

@@ -20,6 +20,9 @@
  * (`./tucked.ts`) until the tab is tapped. Escape still only closes the pop-up. The cat can also be
  * dragged anywhere on the screen and stays exactly where it is let go (`./place.ts`); a tap still
  * opens the pop-up.
+ *
+ * v0.18 (owner, 2026-11-11): the cat starts tucked - a browser that has never brought it out sees
+ * only the tab - and bringing it back opens its pop-up at once, the first line focused.
  */
 
 import {
@@ -321,10 +324,11 @@ export function ContactLauncher({
   };
 
   const tuck = (next: boolean) => {
-    setMenuOpen(false);
+    // brought back, the pop-up opens with it (owner, 2026-11-11) and takes the focus itself
+    setMenuOpen(!next);
     setChatOpen(false);
     if (state.step === "sent") dispatch({ type: "reset" });
-    focusAfterTuck.current = true;
+    focusAfterTuck.current = next;
     setTucked(next);
   };
 
