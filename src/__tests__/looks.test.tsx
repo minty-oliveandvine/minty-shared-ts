@@ -53,7 +53,11 @@ describe("the two looks", () => {
     host.setEntity("e-company-a", "Company A Limited");
     window.history.replaceState({}, "", "/entity/abcd/acme/petty-cash");
     _setViewerLoaderForTests(() =>
-      Promise.resolve({ name: SCOPED.user.name, initials: SCOPED.user.initials }),
+      Promise.resolve({
+        name: SCOPED.user.name,
+        initials: SCOPED.user.initials,
+        can_view_subscriptions: true,
+      }),
     );
   });
 
@@ -79,6 +83,12 @@ describe("the two looks", () => {
         ),
       ).toBe(true);
       expect(has(nav.parentElement!, `${S.sheet} ${S.sheetMenu} ${S.sheetOpen}`)).toBe(true);
+      expect(
+        has(
+          within(nav).getByRole("link", { name: "Manage subscriptions" }),
+          `${S.row} ${S.idle} ${S.subscriptions}`,
+        ),
+      ).toBe(true);
 
       await userEvent.click(
         within(nav).getByRole("button", { name: `${SCOPED.user.name}, My Profile` }),

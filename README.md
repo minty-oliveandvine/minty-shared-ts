@@ -345,7 +345,13 @@ Three of its fields exist for reasons that each cost a debugging session to find
   applies. (`SideMenu` still reads `window.location.pathname` - it is drawn in the drawer's portal
   and re-rendered whenever it opens, and a screen test renders it with no router at all.)
 - **`loadViewer()`** rather than a fetcher, because the two apps' clients disagree about what a 401
-  means (`"handoff"` vs `"reauth"`) and a shared fetch type would have to widen one of them.
+  means (`"handoff"` vs `"reauth"`) and a shared fetch type would have to widen one of them. Since
+  v0.19 the viewer also carries **`can_view_subscriptions`** (accounts-api's
+  `user.can_view_subscriptions`). The menu draws **Manage subscriptions** only when it is `true`,
+  which covers admins, accountants and subscribers (owner, 2026-11-12). A host that drops it hides
+  the item from everyone, so every host's `loadViewer` must pass it. When a page hands in its own
+  viewer without the flag, the menu falls back to the profile read. My Profile's overview counts
+  only the rows the person may change (`can_manage !== false`, `ownEntities`).
 
 A module-level registry, not a React provider, for two reasons that are not style: every app's
 `app/layout.tsx` is a **server** component, so functions cannot be passed across that boundary as

@@ -9,8 +9,9 @@
  * where each item leads, which company and modules, what Logout owes, who is looking.
  *
  * Top to bottom: the Minty mark; THE PERSON (avatar + name), which switches the sidebar to My
- * Profile (the header's initials open it there directly); Select Entity; Manage subscriptions;
- * then, INSIDE A COMPANY only (02-D), its Petty
+ * Profile (the header's initials open it there directly); Select Entity; Manage subscriptions
+ * (only for a viewer whose `can_view_subscriptions` is true - admins, accountants and subscribers,
+ * v0.19); then, INSIDE A COMPANY only (02-D), its Petty
  * Cash and Payment Request sections; the cat, above the last group (the user's rule); and
  * Settings (inside a company only - never on the entity list) and Logout.
  *
@@ -156,6 +157,12 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
   const host = requireSidebarHost();
   const L = SIDEBAR_LOOK[useLook()];
   const person = useViewer(viewer);
+  // Manage subscriptions is for admins, accountants and subscribers (owner, 2026-11-12). A page's
+  // own viewer may not carry the flag (the module page's comes from subscription-api), so the
+  // profile read answers it then. Hidden until known, so nobody sees it come and go.
+  const profile = useViewer();
+  const canViewSubscriptions =
+    (viewer?.can_view_subscriptions ?? profile?.can_view_subscriptions) === true;
   // Read off the URL, so every page gets it for free - and off `window.location`, not the app's
   // router hook: this is drawn inside the drawer's portal, in the browser only, and is re-rendered
   // each time the drawer opens, which is when the answer matters. (`host.usePathname()` is for the
@@ -234,16 +241,18 @@ export function SideMenu({ modules, viewer, onClose, onProfile }: SideMenuProps)
           </span>
           Select Entity
         </MenuLink>
-        <MenuLink
-          look={L}
-          href={host.links.subscriptions()}
-          current={current === "subscriptions"}
-          onNavigate={onClose}
-          className={L.subscriptions}
-        >
-          <SubscriptionsIcon />
-          <span className="max-w-[130px]">Manage subscriptions</span>
-        </MenuLink>
+        {canViewSubscriptions ? (
+          <MenuLink
+            look={L}
+            href={host.links.subscriptions()}
+            current={current === "subscriptions"}
+            onNavigate={onClose}
+            className={L.subscriptions}
+          >
+            <SubscriptionsIcon />
+            <span className="max-w-[130px]">Manage subscriptions</span>
+          </MenuLink>
+        ) : null}
       </div>
       <div className={L.secondSeparator}>
         <Separator look={L} />

@@ -77,12 +77,21 @@ describe("createProfileApi", () => {
 });
 
 describe("loadViewer", () => {
-  it("is the name and the initials, nothing else", async () => {
+  it("is the name, the initials and whether Manage subscriptions is offered, nothing else", async () => {
     const { fetchJson, calls } = client({
-      user: { name: "Olive Vine", initials: "OV", email: "o@x.test" },
+      user: { name: "Olive Vine", initials: "OV", email: "o@x.test", can_view_subscriptions: true },
     });
-    expect(await loadViewer(fetchJson)).toEqual({ name: "Olive Vine", initials: "OV" });
+    expect(await loadViewer(fetchJson)).toEqual({
+      name: "Olive Vine",
+      initials: "OV",
+      can_view_subscriptions: true,
+    });
     expect(calls).toEqual([{ path: "/api/me/profile", init: undefined }]);
+  });
+
+  it("an answer without the flag offers no Manage subscriptions", async () => {
+    const { fetchJson } = client({ user: { name: "Olive Vine", initials: "OV" } });
+    expect((await loadViewer(fetchJson))?.can_view_subscriptions).toBe(false);
   });
 
   it.each([null, {}, { user: {} }, { user: { name: "O" } }, { user: { name: 1, initials: "O" } }])(

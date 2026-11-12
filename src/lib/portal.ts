@@ -66,7 +66,7 @@ export function createProfileApi(fetchJson: FetchJson): ProfileClient {
 }
 
 /** The header's initials and the menu's name - and nothing else of the profile. */
-export type PortalViewer = { name: string; initials: string };
+export type PortalViewer = { name: string; initials: string; can_view_subscriptions?: boolean };
 
 /**
  * The sidebar host's `loadViewer`: the person's name and initials from `/api/me/profile`, or null
@@ -75,12 +75,17 @@ export type PortalViewer = { name: string; initials: string };
  * the page's own reads deal with that.
  */
 export async function loadViewer(fetchJson: FetchJson): Promise<PortalViewer | null> {
-  const body = await fetchJson<{ user?: { name?: unknown; initials?: unknown } } | null>(
-    PROFILE_PATH,
-  );
+  const body = await fetchJson<{
+    user?: { name?: unknown; initials?: unknown; can_view_subscriptions?: unknown };
+  } | null>(PROFILE_PATH);
   const user = body?.user;
   if (typeof user?.name !== "string" || typeof user.initials !== "string") return null;
-  return { name: user.name, initials: user.initials };
+  // v0.19: whether the menu offers Manage subscriptions (admins, accountants, subscribers)
+  return {
+    name: user.name,
+    initials: user.initials,
+    can_view_subscriptions: user.can_view_subscriptions === true,
+  };
 }
 
 // --- Subscriptions ---------------------------------------------------------------------------------
@@ -113,11 +118,18 @@ export type PortalEntity = {
   /**
    * Who carries this company's bill - null when nobody does yet. A trial is started by any admin
    * and establishes no subscriber, so the list also carries the companies the viewer ADMINISTERS
-   * that nobody pays for, and those rows offer Activate Subscription.
+   * that nobody pays for, and those rows offer Activate Subscription. Since v0.19 it also carries
+   * every company the viewer is an admin or accountant of that SOMEONE ELSE pays for, naming them.
    */
   subscriber: { id: string; name: string; email: string } | null;
   /** False on exactly those rows. Absent on an older answer, which means "it has one". */
   has_subscriber?: boolean;
+  /**
+   * Whether the viewer may change this company's subscription (owner, 2026-11-12): only its
+   * subscriber, or an admin while nobody pays. False rows are read-only - no action is offered.
+   * Absent on an older answer, which listed only rows the viewer could manage.
+   */
+  can_manage?: boolean;
   modules: PortalModule[];
   /** A Minty PATH, reached through accounts-api's /entity/<id>/enter (on its session, no token). */
   settings_path: string;

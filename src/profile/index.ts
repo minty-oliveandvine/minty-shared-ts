@@ -11,6 +11,7 @@ export { SubscriptionsOverviewCard } from "./SubscriptionsOverviewCard";
 export {
   daysFromToday,
   overviewFigures,
+  ownEntities,
   TRIAL_ENDING_DAYS,
   type OverviewFigures,
   type SubscriptionsList,

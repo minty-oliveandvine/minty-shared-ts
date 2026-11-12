@@ -10,10 +10,17 @@ import { daysFromToday } from "../lib/dates";
 export { daysFromToday };
 
 /** What the card reads: the person's companies and each one's modules, from subscription-api's
- *  `GET /api/me/subscriptions` (every page). Only these fields are looked at. */
+ *  `GET /api/me/subscriptions` (every page). Only these fields are looked at. `can_manage` false
+ *  marks a company the person only VIEWS (an admin or accountant of it; someone else pays - v0.19);
+ *  missing reads as their own, as every row was before. */
 export type SubscriptionsList = {
-  entities: { modules: { status: string; date_iso: string | null }[] }[];
+  entities: { can_manage?: boolean; modules: { status: string; date_iso: string | null }[] }[];
 };
+
+/** The companies the person may change - their own subscriptions, not the ones they only view. */
+export function ownEntities<T extends { can_manage?: boolean }>(entities: T[]): T[] {
+  return entities.filter((e) => e.can_manage !== false);
+}
 
 export type OverviewFigures = { active: number; trialEnding: number };
 
@@ -26,12 +33,13 @@ export const TRIAL_ENDING_DAYS = 30;
 /**
  * "Active subscriptions" counts COMPANIES - once however many modules - with any module active or
  * cancelled (a trial is not active: nothing is charged yet). "Trial ending" counts the companies
- * with a trial ending within `TRIAL_ENDING_DAYS`.
+ * with a trial ending within `TRIAL_ENDING_DAYS`. Only the person's own (`ownEntities`): a
+ * company they only view is someone else's subscription.
  */
 export function overviewFigures(list: SubscriptionsList, today: Date): OverviewFigures {
   let active = 0;
   let trialEnding = 0;
-  for (const entity of list.entities) {
+  for (const entity of ownEntities(list.entities)) {
     if (entity.modules.some((m) => m.status === "active" || m.status === "cancelled")) active += 1;
     const ending = entity.modules.some((m) => {
       if (m.status !== "trialing") return false;

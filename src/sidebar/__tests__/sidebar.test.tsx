@@ -9,7 +9,13 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { installFakeHost, type FakeHost } from "../../../test/fakeHost";
-import { _resetSidebarHostForTests, requireSidebarHost, setSidebarHost } from "../../host";
+import {
+  _resetSidebarHostForTests,
+  requireSidebarHost,
+  setSidebarHost,
+  type Viewer,
+} from "../../host";
+import { _setViewerLoaderForTests } from "../../lib/viewer";
 import { NavMenu } from "../NavMenu";
 import { ViewerBadge } from "../ViewerBadge";
 import { SidebarProvider } from "../Sidebar";
@@ -20,10 +26,12 @@ function at(path: string) {
   window.history.replaceState({}, "", path);
 }
 
-function app() {
+const ADMIN: Viewer = { name: "Olive Owner", initials: "OO", can_view_subscriptions: true };
+
+function app(viewer?: Viewer | null) {
   return (
     <SidebarProvider profile={<p>the profile slot</p>}>
-      <NavMenu />
+      <NavMenu viewer={viewer} />
     </SidebarProvider>
   );
 }
@@ -37,6 +45,7 @@ let host: FakeHost;
 describe("the packaged sidebar", () => {
   beforeEach(() => {
     host = installFakeHost();
+    _setViewerLoaderForTests(null);
     at("/entities");
   });
 
@@ -64,7 +73,7 @@ describe("the packaged sidebar", () => {
     host.setEntity("e1", "Acme");
     host.setCurrent("settings");
     at("/entity/abcd1234/acme/settings/modules");
-    render(app());
+    render(app(ADMIN));
     await open();
 
     expect(item("Select Entity")).toHaveAttribute("href", "/entities");
@@ -80,10 +89,35 @@ describe("the packaged sidebar", () => {
 
   it("marks the page being shown as current (Part 14 Nav item, Active)", async () => {
     host.setCurrent("entities");
-    render(app());
+    render(app(ADMIN));
     await open();
     expect(item("Select Entity")).toHaveAttribute("aria-current", "page");
     expect(item("Manage subscriptions")).not.toHaveAttribute("aria-current");
+  });
+
+  // Manage subscriptions is for admins, accountants and subscribers (owner, 2026-11-12):
+  // accounts-api's `user.can_view_subscriptions`, carried on the viewer.
+  it.each<[string, Viewer | null]>([
+    ["false", { name: "Cass Cashier", initials: "CC", can_view_subscriptions: false }],
+    ["missing", { name: "Cass Cashier", initials: "CC" }],
+    ["unknown (no viewer yet)", null],
+  ])("hides Manage subscriptions when the flag is %s", async (_label, viewer) => {
+    render(app(viewer));
+    await open();
+    expect(item("Select Entity")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Manage subscriptions" })).toBeNull();
+  });
+
+  it("reads the flag from the profile when the page's own viewer does not carry it", async () => {
+    // the module page hands in subscription-api's viewer, which knows nothing of the flag
+    host.setToken("t1");
+    _setViewerLoaderForTests(() => Promise.resolve(ADMIN));
+    render(app({ name: "Olive Owner", initials: "OO" }));
+    await open();
+    expect(await screen.findByRole("link", { name: "Manage subscriptions" })).toHaveAttribute(
+      "href",
+      "/subscription",
+    );
   });
 
   it("casts its shadow only while open, so the closed sheet leaves no strip on the page's edge", async () => {
@@ -205,6 +239,7 @@ describe("with no profile slot", () => {
 
   beforeEach(() => {
     host = installFakeHost();
+    _setViewerLoaderForTests(null);
     at("/entities");
   });
 

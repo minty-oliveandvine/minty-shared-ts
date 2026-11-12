@@ -28,8 +28,17 @@ export type SideMenuCurrent = "profile" | "entities" | "subscriptions" | "settin
  * The person looking: what the header's badge and the menu's person block show. `email` (v0.14)
  * is the "Talk to Minty" chat's one-tap answer to "What email should we reply to?" - optional,
  * so a host that cannot know it (onboarding's hand-off carries none) simply offers none.
+ *
+ * `can_view_subscriptions` (v0.19, owner 2026-11-12) is accounts-api's `user.can_view_subscriptions`:
+ * the menu offers Manage subscriptions only when it is `true` - to admins, accountants and
+ * subscribers. Missing reads as false, so a host that does not pass it hides the item.
  */
-export type Viewer = { name: string; initials: string; email?: string };
+export type Viewer = {
+  name: string;
+  initials: string;
+  email?: string;
+  can_view_subscriptions?: boolean;
+};
 
 /**
  * Where each item of the menu leads FROM THIS APP. Functions, not strings: most read the cookie

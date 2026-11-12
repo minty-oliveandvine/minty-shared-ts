@@ -3,7 +3,8 @@
 /**
  * My Profile's "Subscriptions Overview" (Figma 10-A / 10-B): how many companies the person pays
  * for, how many have a trial ending, and Manage Subscription into minty-web's portal (08-A) - or,
- * paying for none, "It looks a little quiet here. No entity subscriptions yet." Lifted from
+ * paying for none, "It looks a little quiet here. No entity subscriptions yet." (with Manage
+ * Subscription still offered when the list holds companies they only view - v0.19). Lifted from
  * minty-web's `features/subscription/routes/SubscriptionsOverviewCard.tsx` (v0.6); the figures are
  * its `overview`'s (`./subscriptionsOverview.ts`), so the profile and the portal never disagree.
  *
@@ -20,7 +21,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { requireSidebarHost } from "../host";
 import type { Look } from "../sidebar/looks";
 import type { ProfileLookClasses } from "./looks";
-import { entityUnit, overviewFigures, type SubscriptionsList } from "./subscriptionsOverview";
+import {
+  entityUnit,
+  overviewFigures,
+  ownEntities,
+  type SubscriptionsList,
+} from "./subscriptionsOverview";
 import { isRefusal } from "./types";
 import { useProfileLook } from "./useProfileLook";
 
@@ -90,6 +96,12 @@ export function SubscriptionsOverviewCard({
     [list, today],
   );
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
+  const own = list ? ownEntities(list.entities).length : 0;
+  const manage = (
+    <a href={requireSidebarHost().links.subscriptions()} className={L.manage}>
+      {MANAGE_SUBSCRIPTION}
+    </a>
+  );
 
   return (
     <section className={L.overview} aria-labelledby="profile-subscriptions-overview">
@@ -112,10 +124,9 @@ export function SubscriptionsOverviewCard({
             </button>
           </div>
         ) : null}
-        {list && list.entities.length === 0 ? (
-          <p className={L.overviewEmpty}>{NO_SUBSCRIPTIONS}</p>
-        ) : null}
-        {list && list.entities.length > 0 && figures ? (
+        {list && own === 0 ? <p className={L.overviewEmpty}>{NO_SUBSCRIPTIONS}</p> : null}
+        {list && own === 0 && list.entities.length > 0 ? manage : null}
+        {list && own > 0 && figures ? (
           <>
             <div className={L.figures}>
               <Figure
@@ -131,9 +142,7 @@ export function SubscriptionsOverviewCard({
                 look={L}
               />
             </div>
-            <a href={requireSidebarHost().links.subscriptions()} className={L.manage}>
-              {MANAGE_SUBSCRIPTION}
-            </a>
+            {manage}
           </>
         ) : null}
       </div>

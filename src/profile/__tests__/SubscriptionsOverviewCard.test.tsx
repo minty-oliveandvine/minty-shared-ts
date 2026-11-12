@@ -11,6 +11,7 @@ import {
   SubscriptionsOverviewCard,
   daysFromToday,
   overviewFigures,
+  ownEntities,
   type SubscriptionsList,
 } from "../index";
 
@@ -35,6 +36,15 @@ describe("the overview's figures (minty-web's rule)", () => {
   it("counts COMPANIES: active or cancelled is active; a trial within 30 days is ending", () => {
     expect(overviewFigures(LIST, TODAY)).toEqual({ active: 2, trialEnding: 2 });
     expect(overviewFigures({ entities: [] }, TODAY)).toEqual({ active: 0, trialEnding: 0 });
+  });
+
+  it("leaves out a company the person only views (can_manage false)", () => {
+    const viewed = { ...LIST.entities[0], can_manage: false };
+    expect(overviewFigures({ entities: [...LIST.entities, viewed] }, TODAY)).toEqual({
+      active: 2,
+      trialEnding: 2,
+    });
+    expect(ownEntities([{ can_manage: true }, {}, { can_manage: false }])).toHaveLength(2);
   });
 
   it("reckons today in Hong Kong, as calendar days", () => {
@@ -85,6 +95,25 @@ describe("SubscriptionsOverviewCard", () => {
       await screen.findByText("It looks a little quiet here. No entity subscriptions yet."),
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Manage Subscription" })).toBeNull();
+  });
+
+  it("counts only the person's own companies, never one they only view (v0.19)", async () => {
+    const viewed = { ...LIST.entities[0], can_manage: false };
+    load.mockResolvedValue({ entities: [...LIST.entities, viewed] });
+    render(<SubscriptionsOverviewCard load={load} today={TODAY} />);
+    const card = await screen.findByRole("region", { name: "Subscriptions Overview" });
+    expect(card).toHaveTextContent("Active subscriptions2entities");
+    expect(card).toHaveTextContent("Trial ending2entities");
+  });
+
+  it("only viewing companies: the quiet line, and Manage Subscription to see them", async () => {
+    load.mockResolvedValue({
+      entities: LIST.entities.map((e) => ({ ...e, can_manage: false })),
+    });
+    render(<SubscriptionsOverviewCard load={load} today={TODAY} />);
+    expect(await screen.findByText(/No entity subscriptions yet/)).toBeInTheDocument();
+    expect(screen.queryByText("Active subscriptions")).toBeNull();
+    expect(screen.getByRole("link", { name: "Manage Subscription" })).toBeInTheDocument();
   });
 
   it("a failed read says so, with Try again; a 401 says nothing", async () => {
